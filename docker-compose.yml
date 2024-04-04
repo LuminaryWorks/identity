@@ -1,0 +1,61 @@
+# LuminaryWorks 统一登录授权服务（Logto + PostgreSQL + Redis）
+#
+# 用法:
+#   ./bootstrap.sh           # 一键拉起 + 注册应用
+#   docker compose up -d     # 仅启动
+#
+#   OIDC:  http://localhost:3001/oidc
+#   Admin: http://localhost:3002
+#
+# 五产品后端通过 IDP_ISSUER 走 JWKS 验签；前端走 OIDC PKCE。
+
+services:
+  identity-db:
+    image: postgres:16-alpine
+    container_name: luminary-identity-db
+    environment:
+      POSTGRES_USER: logto
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:-logto_dev_password}
+      POSTGRES_DB: logto
+    ports:
+      - "${IDENTITY_DB_PORT:-5433}:5432"
+    volumes:
+      - luminary_identity_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logto -d logto"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  identity-redis:
+    image: redis:7-alpine
+    container_name: luminary-identity-redis
+    ports:
+      - "${IDENTITY_REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  identity:
+    image: svhd/logto:latest
+    container_name: luminary-identity
+    depends_on:
+      identity-db:
+        condition: service_healthy
+      identity-redis:
+        condition: service_healthy
+    environment:
+      TRUST_PROXY_HEADER: "1"
+      DB_URL: postgres://logto:${IDENTITY_DB_PASSWORD:-logto_dev_password}@identity-db:5432/logto
+      ENDPOINT: ${IDENTITY_ENDPOINT:-http://localhost:3001}
+      ADMIN_ENDPOINT: ${IDENTITY_ADMIN_ENDPOINT:-http://localhost:3002}
+      REDIS_URL: redis://identity-redis:6379
+    ports:
+      - "${IDENTITY_PORT:-3001}:3001"
+      - "${IDENTITY_ADMIN_PORT:-3002}:3002"
+    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
+
+volumes:
+  luminary_identity_pg:

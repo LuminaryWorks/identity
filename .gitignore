@@ -1,0 +1,4 @@
+.env
+registered-apps.json
+node_modules/
+*.log

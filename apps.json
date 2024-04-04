@@ -1,0 +1,48 @@
+{
+  "$comment": "LuminaryWorks 五产品 + IoT 控制台的 Logto Application 注册清单。register-apps.mjs 幂等创建。SPA 用 PKCE，后端资源用 API resource。",
+  "spaApplications": [
+    {
+      "name": "DataView (DataLuminary)",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:3003/auth/callback", "http://localhost:5173/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:3003/login"]
+    },
+    {
+      "name": "VibeEdu edu-app-web",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:18082/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:18082/login"]
+    },
+    {
+      "name": "VibeEdu code-app-web",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:18081/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:18081/login"]
+    },
+    {
+      "name": "VibeAgent Web",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:5174/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:5174/login"]
+    },
+    {
+      "name": "VistaRemote Admin",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:5175/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:5175/login"]
+    },
+    {
+      "name": "LuminaryIoTChain iot-console-web",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:5180/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:5180/login"]
+    }
+  ],
+  "apiResources": [
+    { "name": "DataTalk API", "indicator": "https://api.dataluminary.local" },
+    { "name": "VibeEdu API", "indicator": "https://api.vibeedu.local" },
+    { "name": "VibeAgent API", "indicator": "https://api.vibeagent.local" },
+    { "name": "VistaRemote API", "indicator": "https://api.vistaremote.local" },
+    { "name": "IoT Gateway API", "indicator": "https://api.iotchain.local" }
+  ]
+}
