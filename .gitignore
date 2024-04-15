@@ -1,4 +1,5 @@
 .env
 registered-apps.json
+DEV_USER.json
 node_modules/
 *.log

@@ -24,16 +24,29 @@ for ($i = 0; $i -lt 60; $i++) {
   } catch { Start-Sleep -Seconds 2 }
 }
 
-$m2m = (Select-String -Path .env -Pattern '^LOGTO_M2M_APP_ID=(.+)$').Matches
-if ($m2m.Count -gt 0) {
+$m2mLine = Select-String -Path .env -Pattern '^LOGTO_M2M_APP_ID=(.+)$'
+if (-not $m2mLine) {
+  Write-Host "> Bootstrapping default-tenant M2M (no Admin UI needed) ..."
+  node scripts/bootstrap-m2m.mjs
+} else {
   Write-Host "> Registering applications ..."
   node scripts/register-apps.mjs
-} else {
-  $admin = (Select-String -Path .env -Pattern '^IDENTITY_ADMIN_ENDPOINT=(.*)$').Matches.Groups[1].Value
-  Write-Host "! Skipping app registration: set LOGTO_M2M_APP_ID/SECRET in .env first."
-  Write-Host "  1) Open Admin: $admin"
-  Write-Host "  2) Create a Machine-to-Machine app with Logto Management API access"
-  Write-Host "  3) Fill ID/Secret into .env, then: node scripts/register-apps.mjs"
+}
+
+if (Test-Path .\registered-apps.json) {
+  Write-Host "> Syncing CLIENT_IDs into product .env files ..."
+  node scripts/sync-client-ids.mjs
+  Write-Host "> Ensuring local test user ..."
+  node scripts/seed-dev-user.mjs
+}
+
+if (Select-String -Path .env -Pattern '^LOGTO_M2M_APP_ID=.+$') {
+  Write-Host "> Applying LuminaryWorks branding (logo + primary color) ..."
+  node scripts/apply-branding.mjs
 }
 
 Write-Host "OK Identity ready."
+Write-Host "  OIDC:  $endpoint/oidc"
+Write-Host "  Admin: http://localhost:3002"
+Write-Host "  Brand: http://localhost:3005/luminaryworks-logo.svg"
+Write-Host "  Test user: see scripts/seed-dev-user.mjs output / DEV_USER.json"

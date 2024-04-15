@@ -27,10 +27,23 @@ if grep -qE '^LOGTO_M2M_APP_ID=.+' .env; then
   echo "▶ Registering applications ..."
   node scripts/register-apps.mjs
 else
-  echo "⚠ Skipping app registration: set LOGTO_M2M_APP_ID/SECRET in .env first."
-  echo "  1) Open Admin: $(grep -E '^IDENTITY_ADMIN_ENDPOINT=' .env | cut -d= -f2 || echo http://localhost:3002)"
-  echo "  2) Create a Machine-to-Machine app with Logto Management API access"
-  echo "  3) Fill ID/Secret into .env, then: node scripts/register-apps.mjs"
+  echo "▶ Bootstrapping default-tenant M2M (no Admin UI needed) ..."
+  node scripts/bootstrap-m2m.mjs
 fi
 
-echo "✓ Identity ready. Admin: $(grep -E '^IDENTITY_ADMIN_ENDPOINT=' .env | cut -d= -f2 || echo http://localhost:3002)"
+if [ -f registered-apps.json ]; then
+  echo "▶ Syncing CLIENT_IDs into product .env files ..."
+  node scripts/sync-client-ids.mjs
+  echo "▶ Ensuring local test user ..."
+  node scripts/seed-dev-user.mjs
+fi
+
+if grep -qE '^LOGTO_M2M_APP_ID=.+' .env; then
+  echo "▶ Applying LuminaryWorks branding (logo + primary color) ..."
+  node scripts/apply-branding.mjs
+fi
+
+echo "✓ Identity ready."
+echo "  OIDC:  ${ENDPOINT}/oidc"
+echo "  Admin: $(grep -E '^IDENTITY_ADMIN_ENDPOINT=' .env | cut -d= -f2 || echo http://localhost:3002)"
+echo "  Brand: $(grep -E '^IDENTITY_BRAND_ENDPOINT=' .env | cut -d= -f2 || echo http://localhost:3005)/luminaryworks-logo.svg"

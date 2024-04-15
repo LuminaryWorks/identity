@@ -2,17 +2,23 @@
 #
 # 用法:
 #   ./bootstrap.sh           # 一键拉起 + 注册应用
-#   docker compose up -d     # 仅启动
+#   docker compose up -d     # 仅启动（带 unless-stopped，Docker Desktop 开机后自动拉起）
 #
 #   OIDC:  http://localhost:3001/oidc
 #   Admin: http://localhost:3002
+#   Brand: http://localhost:3005/luminaryworks-logo.svg
 #
-# 五产品后端通过 IDP_ISSUER 走 JWKS 验签；前端走 OIDC PKCE。
+# 产品后端通过 IDP_ISSUER + JWKS 验签；前端走 OIDC PKCE / Experience Headless。
+# 资源级 AuthZ 在各产品 Casbin，不在本 compose。
+#
+# 自动启动：服务均 restart: unless-stopped。
+# Docker Desktop 启动后会自动恢复本栈（需本机已执行过一次 compose up）。
 
 services:
   identity-db:
     image: postgres:16-alpine
     container_name: luminary-identity-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: logto
       POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:-logto_dev_password}
@@ -30,17 +36,34 @@ services:
   identity-redis:
     image: redis:7-alpine
     container_name: luminary-identity-redis
+    restart: unless-stopped
     ports:
-      - "${IDENTITY_REDIS_PORT:-6380}:6379"
+      - "${IDENTITY_REDIS_PORT:-6381}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  # 本地提供 shared/brand 静态资源，供 Logto logoUrl 引用（浏览器可访问的 HTTP URL）
+  identity-brand:
+    image: nginx:alpine
+    container_name: luminary-identity-brand
+    restart: unless-stopped
+    ports:
+      - "${IDENTITY_BRAND_PORT:-3005}:80"
+    volumes:
+      - ../shared/brand:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/luminaryworks-logo.svg || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   identity:
     image: svhd/logto:latest
     container_name: luminary-identity
+    restart: unless-stopped
     depends_on:
       identity-db:
         condition: service_healthy

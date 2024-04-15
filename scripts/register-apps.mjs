@@ -35,19 +35,35 @@ if (!appId || !appSecret) {
 const apps = JSON.parse(readFileSync(join(root, "apps.json"), "utf8"));
 
 const token = await getToken();
-const existingApps = await api("GET", "/applications?page=1&page_size=200");
-const existingResources = await api("GET", "/resources?page=1&page_size=200");
+const existingApps = asList(await api("GET", "/api/applications?page=1&page_size=20"));
+const existingResources = asList(await api("GET", "/api/resources?page=1&page_size=20"));
 
 const result = { spa: {}, apiResources: {} };
 
 for (const spa of apps.spaApplications) {
   const found = existingApps.find((a) => a.name === spa.name);
   if (found) {
-    console.log(`= SPA exists: ${spa.name} (${found.id})`);
+    const desiredRedirects = spa.redirectUris ?? [];
+    const desiredLogout = spa.postLogoutRedirectUris ?? [];
+    const currentRedirects = found.oidcClientMetadata?.redirectUris ?? [];
+    const currentLogout = found.oidcClientMetadata?.postLogoutRedirectUris ?? [];
+    const sameRedirects = JSON.stringify([...currentRedirects].sort()) === JSON.stringify([...desiredRedirects].sort());
+    const sameLogout = JSON.stringify([...currentLogout].sort()) === JSON.stringify([...desiredLogout].sort());
+    if (!sameRedirects || !sameLogout) {
+      await api("PATCH", `/api/applications/${found.id}`, {
+        oidcClientMetadata: {
+          redirectUris: desiredRedirects,
+          postLogoutRedirectUris: desiredLogout,
+        },
+      });
+      console.log(`~ SPA updated redirects: ${spa.name} (${found.id})`);
+    } else {
+      console.log(`= SPA exists: ${spa.name} (${found.id})`);
+    }
     result.spa[spa.name] = found.id;
     continue;
   }
-  const created = await api("POST", "/applications", {
+  const created = await api("POST", "/api/applications", {
     name: spa.name,
     type: "SPA",
     oidcClientMetadata: {
@@ -66,7 +82,7 @@ for (const res of apps.apiResources) {
     result.apiResources[res.name] = res.indicator;
     continue;
   }
-  await api("POST", "/resources", { name: res.name, indicator: res.indicator });
+  await api("POST", "/api/resources", { name: res.name, indicator: res.indicator });
   console.log(`+ API resource created: ${res.name}`);
   result.apiResources[res.name] = res.indicator;
 }
@@ -104,6 +120,12 @@ async function api(method, path, body) {
   });
   if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${await res.text()}`);
   return res.status === 204 ? null : res.json();
+}
+
+function asList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
 }
 
 function loadEnv(path) {

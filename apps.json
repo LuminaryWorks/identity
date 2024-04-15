@@ -1,11 +1,17 @@
 {
-  "$comment": "LuminaryWorks 五产品 + IoT 控制台的 Logto Application 注册清单。register-apps.mjs 幂等创建。SPA 用 PKCE，后端资源用 API resource。",
+  "$comment": "LuminaryWorks 六产品 + 门户的 Logto Application 注册清单。register-apps.mjs 幂等创建。SPA 用 PKCE；后端资源用 API resource。",
   "spaApplications": [
+    {
+      "name": "LuminaryWorks Portal",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:3000/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:3000/"]
+    },
     {
       "name": "DataView (DataLuminary)",
       "type": "SPA",
-      "redirectUris": ["http://localhost:3003/auth/callback", "http://localhost:5173/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:3003/login"]
+      "redirectUris": ["http://localhost:3003/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:3003/#/login", "http://localhost:3003/"]
     },
     {
       "name": "VibeEdu edu-app-web",
@@ -26,10 +32,28 @@
       "postLogoutRedirectUris": ["http://localhost:5174/login"]
     },
     {
+      "name": "DoerFlow Admin",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:13011/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:13011/login"]
+    },
+    {
+      "name": "VistaCast Admin",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:5176/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:5176/login"]
+    },
+    {
       "name": "VistaRemote Admin",
       "type": "SPA",
       "redirectUris": ["http://localhost:5175/auth/callback"],
       "postLogoutRedirectUris": ["http://localhost:5175/login"]
+    },
+    {
+      "name": "VistaRemote Client",
+      "type": "SPA",
+      "redirectUris": ["http://localhost:5173/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:5173/login"]
     },
     {
       "name": "LuminaryIoTChain iot-console-web",
@@ -42,6 +66,7 @@
     { "name": "DataTalk API", "indicator": "https://api.dataluminary.local" },
     { "name": "VibeEdu API", "indicator": "https://api.vibeedu.local" },
     { "name": "VibeAgent API", "indicator": "https://api.vibeagent.local" },
+    { "name": "VistaCast API", "indicator": "https://api.vistacast.local" },
     { "name": "VistaRemote API", "indicator": "https://api.vistaremote.local" },
     { "name": "IoT Gateway API", "indicator": "https://api.iotchain.local" }
   ]
