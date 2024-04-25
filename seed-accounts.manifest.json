@@ -1,0 +1,179 @@
+{
+  "$comment": "LuminaryWorks Identity 账号清单。凭据来自 ACCOUNTS.{dev|product}.env 或同名进程环境变量；勿把弱口令用于公网 SaaS。",
+  "roles": [
+    {
+      "name": "super_admin",
+      "description": "生态超管：全产品最高权（经各产品 external_role_mapping）"
+    },
+    {
+      "name": "platform_admin",
+      "description": "平台运维：用户/RBAC/组织（产品侧常映射为本地 admin）"
+    },
+    {
+      "name": "guest",
+      "description": "普通用户 / 只读基线"
+    },
+    {
+      "name": "dataluminary_admin",
+      "description": "DataLuminary 产品管理员"
+    },
+    {
+      "name": "blockyedu_admin",
+      "description": "BlockyEdu 产品管理员"
+    },
+    {
+      "name": "doerflow_admin",
+      "description": "DoerFlow 产品管理员"
+    },
+    {
+      "name": "vistaremote_admin",
+      "description": "VistaRemote 产品管理员"
+    },
+    {
+      "name": "vistacast_admin",
+      "description": "VistaCast 产品管理员"
+    },
+    {
+      "name": "syncrobrain_admin",
+      "description": "SyncroBrain 产品管理员"
+    }
+  ],
+  "accounts": [
+    {
+      "key": "SUPER_ADMIN",
+      "username": "superadmin",
+      "emailPrefix": "superadmin",
+      "name": "Luminary Super Admin",
+      "roles": ["super_admin", "platform_admin"],
+      "profiles": ["dev", "product"]
+    },
+    {
+      "key": "ADMIN_DATALUMINARY",
+      "username": "admin_dataluminary",
+      "emailPrefix": "admin.dataluminary",
+      "name": "DataLuminary Admin",
+      "roles": ["dataluminary_admin"],
+      "profiles": ["dev", "product"]
+    },
+    {
+      "key": "ADMIN_BLOCKYEDU",
+      "username": "admin_blockyedu",
+      "emailPrefix": "admin.blockyedu",
+      "name": "BlockyEdu Admin",
+      "roles": ["blockyedu_admin"],
+      "profiles": ["dev", "product"]
+    },
+    {
+      "key": "ADMIN_DOERFLOW",
+      "username": "admin_doerflow",
+      "emailPrefix": "admin.doerflow",
+      "name": "DoerFlow Admin",
+      "roles": ["doerflow_admin"],
+      "profiles": ["dev", "product"]
+    },
+    {
+      "key": "ADMIN_VISTAREMOTE",
+      "username": "admin_vistaremote",
+      "emailPrefix": "admin.vistaremote",
+      "name": "VistaRemote Admin",
+      "roles": ["vistaremote_admin"],
+      "profiles": ["dev", "product"]
+    },
+    {
+      "key": "ADMIN_VISTACAST",
+      "username": "admin_vistacast",
+      "emailPrefix": "admin.vistacast",
+      "name": "VistaCast Admin",
+      "roles": ["vistacast_admin"],
+      "profiles": ["dev", "product"]
+    },
+    {
+      "key": "ADMIN_SYNCROBRAIN",
+      "username": "admin_syncrobrain",
+      "emailPrefix": "admin.syncrobrain",
+      "name": "SyncroBrain Admin",
+      "roles": ["syncrobrain_admin"],
+      "profiles": ["dev", "product"]
+    },
+    {
+      "key": "USER_01",
+      "username": "user01",
+      "emailPrefix": "user01",
+      "name": "Dev User 01",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_02",
+      "username": "user02",
+      "emailPrefix": "user02",
+      "name": "Dev User 02",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_03",
+      "username": "user03",
+      "emailPrefix": "user03",
+      "name": "Dev User 03",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_04",
+      "username": "user04",
+      "emailPrefix": "user04",
+      "name": "Dev User 04",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_05",
+      "username": "user05",
+      "emailPrefix": "user05",
+      "name": "Dev User 05",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_06",
+      "username": "user06",
+      "emailPrefix": "user06",
+      "name": "Dev User 06",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_07",
+      "username": "user07",
+      "emailPrefix": "user07",
+      "name": "Dev User 07",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_08",
+      "username": "user08",
+      "emailPrefix": "user08",
+      "name": "Dev User 08",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_09",
+      "username": "user09",
+      "emailPrefix": "user09",
+      "name": "Dev User 09",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    },
+    {
+      "key": "USER_10",
+      "username": "user10",
+      "emailPrefix": "user10",
+      "name": "Dev User 10",
+      "roles": ["guest"],
+      "profiles": ["dev"]
+    }
+  ]
+}

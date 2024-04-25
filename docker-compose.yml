@@ -3,16 +3,20 @@
 # 用法:
 #   ./bootstrap.sh           # 一键拉起 + 注册应用
 #   docker compose up -d     # 仅启动（带 unless-stopped，Docker Desktop 开机后自动拉起）
+#   docker compose stop      # 临时停止（容器保留，下次 Desktop 启动仍会自启）
+#   docker compose down      # 移除容器（需再次 up 才会恢复自启）
 #
 #   OIDC:  http://localhost:3001/oidc
 #   Admin: http://localhost:3002
-#   Brand: http://localhost:3005/luminaryworks-logo.svg
+#   Logo:  https://cdn.luminaryworks.dev/logo/luminaryworks-logo.svg
 #
 # 产品后端通过 IDP_ISSUER + JWKS 验签；前端走 OIDC PKCE / Experience Headless。
 # 资源级 AuthZ 在各产品 Casbin，不在本 compose。
 #
 # 自动启动：服务均 restart: unless-stopped。
-# Docker Desktop 启动后会自动恢复本栈（需本机已执行过一次 compose up）。
+# Docker Desktop 启动后会自动恢复本栈（需本机已执行过一次 compose up，且未 down）。
+
+name: identity
 
 services:
   identity-db:
@@ -32,6 +36,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
 
   identity-redis:
     image: redis:7-alpine
@@ -44,21 +49,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-
-  # 本地提供 shared/brand 静态资源，供 Logto logoUrl 引用（浏览器可访问的 HTTP URL）
-  identity-brand:
-    image: nginx:alpine
-    container_name: luminary-identity-brand
-    restart: unless-stopped
-    ports:
-      - "${IDENTITY_BRAND_PORT:-3005}:80"
-    volumes:
-      - ../shared/brand:/usr/share/nginx/html:ro
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/luminaryworks-logo.svg || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
+      start_period: 5s
 
   identity:
     image: svhd/logto:latest
@@ -78,7 +69,20 @@ services:
     ports:
       - "${IDENTITY_PORT:-3001}:3001"
       - "${IDENTITY_ADMIN_PORT:-3002}:3002"
+    # seed 幂等；start_period 覆盖首次 seed + 启动窗口，避免 Desktop 重启时误报 unhealthy
     entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:3001/oidc/.well-known/openid-configuration || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 90s
 
 volumes:
+  # 固定绝对卷名（不随 compose project 前缀变化），新机首次 up 会自动创建
   luminary_identity_pg:
+    name: identity_luminary_identity_pg

@@ -7,16 +7,17 @@ Yes — **after the first successful `pnpm id:up` / `docker compose up -d`**.
 All services in [`docker-compose.yml`](./docker-compose.yml) use:
 
 ```yaml
-restart: unless-stopped
+    restart: unless-stopped
 ```
 
-So when Docker Desktop starts, it **restarts previously created containers** that were not explicitly stopped (`docker compose down` / Stop in UI). It does **not** invent the stack from zero on a fresh machine.
+So when Docker Desktop starts, it **restarts previously created containers** that were not removed. It does **not** invent the stack from zero on a fresh machine.
 
 | Situation | What happens |
 |-----------|----------------|
 | First clone / never ran identity | Need `cd LuminaryWorks && pnpm id:up` once |
-| Docker Desktop reboot | Containers auto-restart (`unless-stopped`) |
-| You ran `docker compose down` | Need `pnpm id:up` again |
+| Docker Desktop reboot / Windows 登录后 Desktop 自启 | Containers auto-restart (`unless-stopped`) |
+| You ran `pnpm id:down` / `docker compose stop` | Containers stay; next Desktop start **still** auto-starts |
+| You ran `pnpm id:destroy` / `docker compose down` | Containers removed; need `pnpm id:up` again |
 | Port 3001 conflict / crash loop | Fix env/ports, then `pnpm id:up` |
 
 ## One-command local IdP
@@ -29,13 +30,34 @@ pnpm id:up
 # Probe: http://localhost:3001/oidc/.well-known/openid-configuration
 ```
 
-Health:
+Health / status:
 
 ```bash
+pnpm id:ps
+# or:
 cd identity
 docker compose ps
 curl http://localhost:3001/oidc/.well-known/openid-configuration
 ```
+
+Stop without breaking auto-start:
+
+```bash
+pnpm id:down          # = docker compose stop（保留容器）
+pnpm id:destroy       # = docker compose down（拆掉栈，下次需 id:up）
+```
+
+
+## Admin Console login (developers)
+
+Two different logins:
+
+| Who | Env | URL |
+|-----|-----|-----|
+| Logto Console operator | `LW_LOGTO_ADMIN_*` in `identity/.env` | http://localhost:3002 |
+| Platform / product users | `ACCOUNTS.dev.env` | product SPA login pages |
+
+After `pnpm id:up`, open Admin with the Console operator (see `.env.example`). Missing `LW_LOGTO_ADMIN_PASSWORD` aborts bootstrap — there is no Welcome-page fallback for private deploy.
 
 ## Issuer host rule (Windows)
 
@@ -63,7 +85,7 @@ This stack is already the local IdP package: official images + compose + registe
 
 Optional private mirror (team registry):
 
-1. Mirror the four images to your GHCR/Harbor.
+1. Mirror the three images to your GHCR/Harbor.
 2. Override in `docker-compose.override.yml`:
 
 ```yaml
@@ -82,4 +104,10 @@ A single all-in-one “fat” image is **not** recommended (Logto + Postgres + R
 
 ## Docker Desktop tip
 
-Settings → General → **Start Docker Desktop when you sign in** (optional). Combined with `unless-stopped`, identity comes back after login without re-running bootstrap — as long as the containers still exist.
+Settings → General → **Start Docker Desktop when you sign in**（本机已可写入 `settings-store.json` 的 `AutoStart=true`）。
+
+Combined with `unless-stopped` + **不要用 `compose down` 当日常关闭**：
+
+1. 登录 Windows → Docker Desktop 自启
+2. Desktop 引擎就绪后 → `luminary-identity*` 按 restart 策略自动恢复
+3. OIDC 约在 Logto seed/启动完成后可用（健康检查 `start_period` 约 90s）

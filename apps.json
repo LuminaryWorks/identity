@@ -11,7 +11,7 @@
       "name": "DataView (DataLuminary)",
       "type": "SPA",
       "redirectUris": ["http://localhost:3003/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:3003/#/login", "http://localhost:3003/"]
+      "postLogoutRedirectUris": ["http://localhost:3003/"]
     },
     {
       "name": "VibeEdu edu-app-web",
@@ -46,14 +46,34 @@
     {
       "name": "VistaRemote Admin",
       "type": "SPA",
-      "redirectUris": ["http://localhost:5175/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:5175/login"]
+      "redirectUris": [
+        "http://localhost:5175/auth/callback",
+        "http://127.0.0.1:5175/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:5175/login",
+        "http://127.0.0.1:5175/login"
+      ]
     },
     {
       "name": "VistaRemote Client",
       "type": "SPA",
-      "redirectUris": ["http://localhost:5173/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:5173/login"]
+      "redirectUris": [
+        "http://localhost:5173/auth/callback",
+        "http://127.0.0.1:5173/auth/callback",
+        "http://localhost:17890/auth/callback",
+        "http://127.0.0.1:17890/auth/callback",
+        "http://127.0.0.1:17891/auth/callback",
+        "http://localhost:17891/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:5173/login",
+        "http://127.0.0.1:5173/login",
+        "http://localhost:17890/login",
+        "http://127.0.0.1:17890/login",
+        "http://127.0.0.1:17891/login",
+        "http://localhost:17891/login"
+      ]
     },
     {
       "name": "LuminaryIoTChain iot-console-web",

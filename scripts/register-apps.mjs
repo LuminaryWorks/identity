@@ -77,14 +77,28 @@ for (const spa of apps.spaApplications) {
 
 for (const res of apps.apiResources) {
   const found = existingResources.find((r) => r.indicator === res.indicator);
+  let resourceId;
   if (found) {
     console.log(`= API resource exists: ${res.name}`);
     result.apiResources[res.name] = res.indicator;
-    continue;
+    resourceId = found.id;
+  } else {
+    const created = await api("POST", "/api/resources", { name: res.name, indicator: res.indicator });
+    console.log(`+ API resource created: ${res.name}`);
+    result.apiResources[res.name] = res.indicator;
+    resourceId = created.id;
   }
-  await api("POST", "/api/resources", { name: res.name, indicator: res.indicator });
-  console.log(`+ API resource created: ${res.name}`);
-  result.apiResources[res.name] = res.indicator;
+  // Logto JWT access tokens for a resource require at least one scope on that resource.
+  if (resourceId) {
+    const scopes = asList(await api("GET", `/api/resources/${resourceId}/scopes?page=1&page_size=20`));
+    if (!scopes.length) {
+      await api("POST", `/api/resources/${resourceId}/scopes`, {
+        name: "access",
+        description: "Default API access scope",
+      });
+      console.log(`+ scope "access" on ${res.name}`);
+    }
+  }
 }
 
 writeFileSync(join(root, "registered-apps.json"), `${JSON.stringify(result, null, 2)}\n`);

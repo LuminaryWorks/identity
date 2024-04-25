@@ -28,7 +28,8 @@ const targets = [
           VITE_IDP_CLIENT_ID: "",
           // Path callback (port 3003); do not share 5173 with VistaRemote Client
           VITE_IDP_REDIRECT_URI: "http://localhost:3003/auth/callback",
-          VITE_IDP_POST_LOGOUT_URI: "http://localhost:3003/#/login",
+          // OIDC forbids fragments in post_logout_redirect_uri
+          VITE_IDP_POST_LOGOUT_URI: "http://localhost:3003/",
           VITE_IDP_AUDIENCE: "https://api.dataluminary.local",
         },
       },

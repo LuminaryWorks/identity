@@ -32,26 +32,113 @@ LuminaryWorks 六产品 + 控制台的**统一登录授权服务**（Logto OIDC�
 启动后会自动：
 
 1. `docker compose up`（Logto + PG + Redis）
-2. 若无 M2M：`scripts/bootstrap-m2m.mjs`（向 default 租户写入 Management API M2M，**无需先打开 Admin**）
-3. `scripts/register-apps.mjs` → `registered-apps.json`
-4. `scripts/sync-client-ids.mjs` → 写入各产品 `.env` / `.env.development`
-5. `scripts/seed-dev-user.mjs` → 本地测试账号 `DEV_USER.json`
+2. `scripts/ensure-logto-admin.mjs` — 创建 **Logto Admin Console 操作员**（admin 租户；`LW_LOGTO_ADMIN_*`）；**未配置则中止**
+3. 若无 M2M：`scripts/bootstrap-m2m.mjs`（向 default 租户写入 Management API M2M，**无需先打开 Admin Welcome 页**）
+4. `scripts/register-apps.mjs` → `registered-apps.json`
+5. `scripts/sync-client-ids.mjs` → 写入各产品 `.env` / `.env.development`
+6. `scripts/seed-accounts.mjs` — 校验 `ACCOUNTS.{dev|product}.env` 或 `LW_*` 环境变量；**未配置则中止**（不自动复制、不交互）
 
-启动后：
+### 部署顺序
+
+```text
+1. 配置 identity/.env（端口、LW_LOGTO_ADMIN_*、M2M 等）
+2. 配置平台账号凭据（二选一）：
+     · 本地：cp ACCOUNTS.dev.env.example ACCOUNTS.dev.env（或 product）
+     · CI/云：注入 IDENTITY_ACCOUNTS_PROFILE + LW_*_PASSWORD 等
+3. ./bootstrap.ps1 或 ./bootstrap.sh
+     ← 缺 LW_LOGTO_ADMIN_* 或平台 ACCOUNTS 会失败退出
+4. 用 LW_LOGTO_ADMIN_* 登录 http://localhost:3002
+5. 启动各产品用统一登录（平台用户见 ACCOUNTS）
+```
+
+| Profile | 文件 / 环境 | 账号范围 |
+|---------|-------------|---------|
+| `dev`（默认） | `ACCOUNTS.dev.env` 或同名 `LW_*` | 超管 + 6 产品管理员 + user01..10 |
+| `product` | `ACCOUNTS.product.env` 或 `LW_*`（适合 GitHub Actions secrets） | 超管 + 6 产品管理员 |
+
+选择 profile：`IDENTITY_ACCOUNTS_PROFILE=dev|product`（`NODE_ENV=production` 时默认 `product`）。
+
+## 两套账号（请勿混淆）
+
+| 维度 | 配置 | 登录入口 | 用途 |
+|------|------|----------|------|
+| **Logto Admin Console 操作员** | `identity/.env` 的 `LW_LOGTO_ADMIN_*` | http://localhost:3002 | 管 connector / 应用 / Sign-in Experience |
+| **平台用户** | `ACCOUNTS.*.env` 或 `LW_SUPER_ADMIN_*` 等 | 各产品登录页 / OIDC | 产品身份、角色、SSO |
+
+`ACCOUNTS` **不会**自动变成 Console 管理员；Console 管理员也 **不是** 产品 `superadmin@…`。
+
+### Logto Admin Console 操作员
+
+私有化 / 本地初始化时由 `scripts/ensure-logto-admin.mjs` 幂等创建（admin 租户）：
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `LW_LOGTO_ADMIN_USERNAME` | 是 | Console 登录用户名 |
+| `LW_LOGTO_ADMIN_PASSWORD` | 是 | 不能为空或 `CHANGE_ME` |
+| `LW_LOGTO_ADMIN_EMAIL` | 否 | 可选主邮箱 |
+| `LW_LOGTO_ADMIN_RESET_PASSWORD` | 否 | 设为 `1` 时，已存在用户也会重置密码 |
+
+模板见 [`.env.example`](./.env.example)。缺配置时 **bootstrap 直接失败**（不依赖首次打开 Welcome 页手建）。
+
+```bash
+# 仅补建 / 校验 Console 操作员
+node scripts/ensure-logto-admin.mjs
+```
+
+本地默认示例（请按环境改密）：
+
+- 用户名：`logto_admin`
+- 密码：`LuminaryDev!234`
+- 控制台：http://localhost:3002
+
+### 启动后入口
 
 - OIDC Issuer：`http://localhost:3001/oidc`
-- Admin 控制台：`http://localhost:3002`
-- 测试账号：见 `DEV_USER.json`（默认 `dev@luminaryworks.local` / `LuminaryDev!234`）
+- Admin 控制台：`http://localhost:3002`（用 `LW_LOGTO_ADMIN_*` 登录，不是 ACCOUNTS）
+- 平台账号凭据：`ACCOUNTS.*.env` 或部署环境变量；Logto user id 写入 `ACCOUNTS.{profile}.seeded.json`（不含密码）
+
+| 账号 | 默认邮箱（dev） | IdP 角色 | 用途 |
+|------|-----------------|----------|------|
+| 生态超管 | `superadmin@luminaryworks.local` | `super_admin` + `platform_admin` | 全产品超管 |
+| 产品管理员 ×6 | `admin.<product>@…` | `*_admin` | 各产品管理员 |
+| 普通用户 ×10 | `user01`…`user10@…` | `guest` | 仅 **dev** |
+
+角色键：[`seed-accounts.manifest.json`](./seed-accounts.manifest.json)。模板：[`ACCOUNTS.dev.env.example`](./ACCOUNTS.dev.env.example) · [`ACCOUNTS.product.env.example`](./ACCOUNTS.product.env.example)。
+
+### GitHub Actions 示例
+
+```yaml
+env:
+  IDENTITY_ACCOUNTS_PROFILE: product
+  LW_LOGTO_ADMIN_USERNAME: logto_admin
+  LW_LOGTO_ADMIN_PASSWORD: ${{ secrets.LW_LOGTO_ADMIN_PASSWORD }}
+  LW_SUPER_ADMIN_EMAIL: superadmin@example.com
+  LW_SUPER_ADMIN_USERNAME: superadmin
+  LW_SUPER_ADMIN_PASSWORD: ${{ secrets.LW_SUPER_ADMIN_PASSWORD }}
+  # …其余 LW_ADMIN_*_PASSWORD 等同理
+steps:
+  - run: node scripts/ensure-logto-admin.mjs
+    working-directory: identity
+  - run: node scripts/seed-accounts.mjs
+    working-directory: identity
+```
+
+手动补种：
+
+```bash
+IDENTITY_ACCOUNTS_PROFILE=dev node scripts/seed-accounts.mjs
+```
 
 ## 应用注册（幂等）
 
 也可手动：
 
 ```bash
+node scripts/ensure-logto-admin.mjs
 node scripts/bootstrap-m2m.mjs   # 仅首次 / 无 M2M 时
 node scripts/register-apps.mjs
 node scripts/sync-client-ids.mjs
-node scripts/seed-dev-user.mjs
+IDENTITY_ACCOUNTS_PROFILE=dev node scripts/seed-accounts.mjs
 ```
 
 脚本读取 [`apps.json`](./apps.json)，幂等创建 SPA 与 API 资源，并把 `CLIENT_ID` 写入 `registered-apps.json`。
@@ -73,20 +160,64 @@ DoerFlow 特例：Logto 平台会话与 wallet/SIWE 会话独立；Logto 不证�
 
 默认路径：**各产品自建品牌登录页**，调用 Experience API / OIDC PKCE；不要 fork Logto Experience 源码。Management API 仅后端运维使用。
 
+产品侧 `@luminary/auth-react` 的 `HeadlessLoginPanel`：
+
+| UI | 行为 |
+|----|------|
+| 社交按钮（自动） | 从 IdP `socialSignInConnectorTargets` 拉取；新增 X / 飞书 / QQ 等启用后自动出现，横排换行 |
+| Google / GitHub 等 | OIDC + `direct_sign_in=social:<target>`，直达提供商（不经 Logto 密码表单） |
+| 邮箱/用户名 + 密码 | Experience API Headless（统一账号） |
+
+Logto 托管页 `http://localhost:3001/sign-in` 的社交按钮布局由 `customCss` 控制（`apply-branding.mjs` / `ensure-sign-in-experience.mjs`），与产品 Headless 面板是两套 UI。
+
+### Social login（Google / GitHub）本地联调
+
+1. **在提供商创建 OAuth 应用**（回调必须指向 Logto，不是产品 SPA）：
+   - GitHub → Settings → Developer settings → OAuth Apps  
+   - Google → Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client (Web)
+2. **在 Logto Admin**（http://localhost:3002）→ Connectors → Social：填入 `clientId` / `clientSecret`。
+3. **启用到 Sign-in Experience**（connector 建好但未挂到 SIE 时，`direct_sign_in` 会退回密码页）：
+
+```bash
+node scripts/ensure-sign-in-experience.mjs
+```
+
+4. **核对回调 URL**（把下面地址粘到 Google / GitHub 的 Authorization callback URL）：
+
+```text
+http://localhost:3001/callback/<connectorId>
+```
+
+`ensure-sign-in-experience.mjs` / `verify-social-direct-signin.mjs` 会打印完整 callback。
+
+5. **自动化检查**（authorize → 提供商，不代替浏览器完成同意页）：
+
+```bash
+node scripts/verify-social-direct-signin.mjs
+```
+
+常见失败：
+
+| 现象 | 处理 |
+|------|------|
+| 仍停在 `localhost:3001/sign-in` | `socialSignInConnectorTargets` 为空 → 跑步骤 3 |
+| `redirect_uri_mismatch` | Google/GitHub 回调不是 `http://localhost:3001/callback/<id>` |
+| SPA callback 报错 | 产品 `VITE_IDP_REDIRECT_URI` 须在 `apps.json` 已注册 |
+
 ### 统一登录页品牌（Omni Sign-in Experience）
 
 Logto 自带登录页的 logo / 主色走 **Sign-in Experience 配置**（Admin 或 Management API），不是改 Logto 源码：
 
 | 项 | 来源 |
 |----|------|
-| Logo | `shared/brand/luminaryworks-logo.svg`，经 `identity-brand` 暴露为 `http://localhost:3005/luminaryworks-logo.svg` |
+| Logo | [cdn.luminaryworks.dev/logo/luminaryworks-logo.svg](https://cdn.luminaryworks.dev/logo/luminaryworks-logo.svg)（源文件在 `shared/brand/`，已上传 R2） |
 | 主色 | `#1677ff`（`shared/brand/tokens.css` → `--lw-primary`） |
 
 ```bash
 node scripts/apply-branding.mjs
 ```
 
-`logoUrl` **必须是 HTTP(S) URL**（浏览器加载），不能写本地盘路径。生产环境把该 URL 换成 CDN / 文档站静态地址即可。
+`logoUrl` **必须是 HTTP(S) URL**（浏览器加载），不能写本地盘路径。默认指向 CDN；可用 `.env` 的 `IDENTITY_BRAND_ENDPOINT` 覆盖。
 
 ## 私有化部署
 
@@ -110,9 +241,14 @@ node scripts/apply-branding.mjs
 
 ## Docker Desktop 自动启动
 
-三个服务均配置 `restart: unless-stopped`。本机**至少成功 `compose up` 一次**后：
+三个服务均配置 `restart: unless-stopped`，并带健康检查。本机**至少成功 `compose up` / `pnpm id:up` 一次**后：
 
-1. Docker Desktop → Settings → **General** → 勾选 **Start Docker Desktop when you sign in**（登录 Windows 后自动开 Docker）
+1. Docker Desktop → Settings → **General** → 勾选 **Start Docker Desktop when you sign in**
 2. Docker Desktop 启动时会按 restart 策略自动拉起 `luminary-identity*` 容器
 
-手动停止（`docker compose stop` / `pnpm id:down`）后不会自动再起，直到下次 `up`；`docker compose down` 会移除容器，需重新 `up` 才会恢复自动启动。
+| 命令 | 效果 |
+|------|------|
+| `pnpm id:down` / `docker compose stop` | 临时停止；**容器保留**，下次 Desktop 启动仍会自启 |
+| `pnpm id:destroy` / `docker compose down` | 移除容器；需再次 `pnpm id:up` 才恢复自启 |
+
+详见 [LOCAL_DEV_DOCKER.md](./LOCAL_DEV_DOCKER.md)。

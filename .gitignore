@@ -1,5 +1,8 @@
 .env
 registered-apps.json
-DEV_USER.json
+ACCOUNTS.dev.env
+ACCOUNTS.product.env
+ACCOUNTS.*.seeded.json
+DEV_ACCOUNTS.env
 node_modules/
 *.log

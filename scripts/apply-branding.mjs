@@ -2,8 +2,10 @@
  * Apply LuminaryWorks branding to Logto default sign-in experience.
  *
  * Sets:
- *   - logo / favicon → shared/brand/luminaryworks-logo.svg (via identity-brand :3005)
+ *   - logo / favicon → https://cdn.luminaryworks.dev/logo/luminaryworks-logo.svg
  *   - primaryColor → #1677ff (tokens.css --lw-primary)
+ *
+ * Override logo base with IDENTITY_BRAND_ENDPOINT (no trailing slash).
  *
  * Usage: node scripts/apply-branding.mjs
  */
@@ -14,7 +16,10 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const env = loadEnv(join(root, ".env"));
 const endpoint = (env.IDENTITY_ENDPOINT || "http://localhost:3001").replace(/\/$/, "");
-const brandBase = (env.IDENTITY_BRAND_ENDPOINT || "http://localhost:3005").replace(/\/$/, "");
+const brandBase = (env.IDENTITY_BRAND_ENDPOINT || "https://cdn.luminaryworks.dev/logo").replace(
+  /\/$/,
+  "",
+);
 const appId = env.LOGTO_M2M_APP_ID;
 const appSecret = env.LOGTO_M2M_APP_SECRET;
 const resource = env.LOGTO_MANAGEMENT_API_RESOURCE || "https://default.logto.app/api";
@@ -22,6 +27,23 @@ const resource = env.LOGTO_MANAGEMENT_API_RESOURCE || "https://default.logto.app
 const PRIMARY = "#1677ff";
 const PRIMARY_DARK = "#4593ff";
 const logoUrl = `${brandBase}/luminaryworks-logo.svg`;
+
+/** Row + wrap social buttons; auto-adapts when more connectors (X / Feishu / QQ) are enabled. */
+const SOCIAL_ROW_CSS = `
+#app div[class*='socialLinkList'] {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+}
+#app div[class*='socialLinkList'] > button,
+#app div[class*='socialLinkList'] > div[class*='socialLinkButton'] {
+  margin-bottom: 0 !important;
+  flex: 1 1 calc(50% - 6px);
+  min-width: min(140px, 100%);
+}
+`.trim();
 
 if (!appId || !appSecret) {
   console.error("✗ Missing LOGTO_M2M_APP_ID/SECRET. Run bootstrap-m2m.mjs first.");
@@ -41,6 +63,7 @@ const body = {
     favicon: logoUrl,
     darkFavicon: logoUrl,
   },
+  customCss: SOCIAL_ROW_CSS,
 };
 
 const res = await fetch(`${endpoint}/api/sign-in-exp`, {
@@ -60,7 +83,8 @@ if (!res.ok) {
 console.log("✓ Sign-in branding updated");
 console.log(`  logo: ${logoUrl}`);
 console.log(`  primary: ${PRIMARY} (dark: ${PRIMARY_DARK})`);
-console.log(`  preview: ${endpoint}/experience`);
+console.log(`  customCss: social buttons row + wrap`);
+console.log(`  preview: ${endpoint}/sign-in`);
 
 async function getToken() {
   const basic = Buffer.from(`${appId}:${appSecret}`).toString("base64");
