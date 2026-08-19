@@ -2,18 +2,61 @@
  * Sync CLIENT_IDs from identity/registered-apps.json into product .env* files.
  * Idempotent: upserts known keys; never deletes unrelated vars.
  *
+ * Writes both Vite (`VITE_*` / `PUBLIC_*`) and Next (`NEXT_PUBLIC_*`) keys when
+ * both are present — Next apps ignore `VITE_*`, so a VITE-only sync left
+ * BlockyEdu / DoerFlow Admin on stale `NEXT_PUBLIC_IDP_CLIENT_ID`.
+ *
  * Usage: node scripts/sync-client-ids.mjs
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const identityRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-const metaRoot = join(identityRoot, "..");
+const workspaceRoot = join(identityRoot, "..", "..");
 const registered = JSON.parse(readFileSync(join(identityRoot, "registered-apps.json"), "utf8"));
 const spa = registered.spa || {};
 
 const IDP_ISSUER = "http://localhost:3001/oidc";
+
+/** Case-insensitive walk so `blockyedu` resolves to `BlockyEdu` on Linux too. */
+function resolveWorkspacePath(...segments) {
+  let current = workspaceRoot;
+  for (const seg of segments) {
+    if (!seg) continue;
+    const exact = join(current, seg);
+    if (existsSync(exact)) {
+      current = exact;
+      continue;
+    }
+    let found;
+    try {
+      found = readdirSync(current, { withFileTypes: true }).find(
+        (e) => e.isDirectory() && e.name.toLowerCase() === String(seg).toLowerCase(),
+      );
+    } catch {
+      found = undefined;
+    }
+    current = found ? join(current, found.name) : exact;
+  }
+  return current;
+}
+
+function clientIdKeys(value) {
+  return {
+    VITE_IDP_CLIENT_ID: value,
+    PUBLIC_IDP_CLIENT_ID: value,
+    NEXT_PUBLIC_IDP_CLIENT_ID: value,
+  };
+}
+
+function issuerKeys() {
+  return {
+    VITE_IDP_ISSUER: IDP_ISSUER,
+    PUBLIC_IDP_ISSUER: IDP_ISSUER,
+    NEXT_PUBLIC_IDP_ISSUER: IDP_ISSUER,
+  };
+}
 
 /** @type {{ label: string, clientId: string|undefined, files: { path: string, keys: Record<string,string> }[] }[]} */
 const targets = [
@@ -22,19 +65,27 @@ const targets = [
     clientId: spa["DataView (DataLuminary)"],
     files: [
       {
-        path: join(metaRoot, "..", "dataluminary", "DataView", ".env.development"),
+        path: resolveWorkspacePath("DataLuminary", "DataView", ".env.development"),
         keys: {
-          VITE_IDP_ISSUER: IDP_ISSUER,
-          VITE_IDP_CLIENT_ID: "",
-          // Path callback (port 3003); do not share 5173 with VistaRemote Client
+          ...issuerKeys(),
+          ...clientIdKeys(""),
           VITE_IDP_REDIRECT_URI: "http://localhost:3003/auth/callback",
-          // OIDC forbids fragments in post_logout_redirect_uri
           VITE_IDP_POST_LOGOUT_URI: "http://localhost:3003/",
+          VITE_IDP_AUDIENCE: "https://api.dataluminary.local",
+          VITE_AUTH_EXPERIENCE_URL: "http://localhost:3003",
+        },
+      },
+      {
+        path: resolveWorkspacePath("DataLuminary", "DataView", ".env"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          VITE_IDP_REDIRECT_URI: "http://localhost:3003/auth/callback",
           VITE_IDP_AUDIENCE: "https://api.dataluminary.local",
         },
       },
       {
-        path: join(metaRoot, "..", "dataluminary", "DataTalk", ".env"),
+        path: resolveWorkspacePath("DataLuminary", "DataTalk", ".env"),
         keys: {
           IDP_MODE: "logto",
           IDP_ISSUER,
@@ -48,16 +99,38 @@ const targets = [
     clientId: spa["VibeEdu edu-app-web"],
     files: [
       {
-        path: join(metaRoot, "..", "blockyedu", "edu-app-web", ".env.development"),
+        path: resolveWorkspacePath("BlockyEdu", "edu-app-web", ".env.development"),
         keys: {
-          VITE_IDP_ISSUER: IDP_ISSUER,
-          VITE_IDP_CLIENT_ID: "",
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          NEXT_PUBLIC_IDP_REDIRECT_URI: "http://localhost:18082/auth/callback",
+          NEXT_PUBLIC_IDP_POST_LOGOUT_URI: "http://localhost:18082/login",
+          NEXT_PUBLIC_AUTH_EXPERIENCE_URL: "http://localhost:18082",
+          NEXT_PUBLIC_APP_ORIGIN: "http://localhost:18082",
+          NEXT_PUBLIC_IDP_AUDIENCE: "https://api.vibeedu.local",
           VITE_IDP_REDIRECT_URI: "http://localhost:18082/auth/callback",
           VITE_IDP_AUDIENCE: "https://api.vibeedu.local",
         },
       },
       {
-        path: join(metaRoot, "..", "blockyedu", "edu-server", ".env"),
+        path: resolveWorkspacePath("BlockyEdu", "edu-app-web", ".env.local"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          NEXT_PUBLIC_IDP_REDIRECT_URI: "http://localhost:18082/auth/callback",
+          NEXT_PUBLIC_AUTH_EXPERIENCE_URL: "http://localhost:18082",
+        },
+      },
+      {
+        path: resolveWorkspacePath("BlockyEdu", "edu-server", ".env"),
+        keys: {
+          IDP_MODE: "logto",
+          IDP_ISSUER,
+          IDP_AUDIENCE: "https://api.vibeedu.local",
+        },
+      },
+      {
+        path: resolveWorkspacePath("BlockyEdu", "server", ".env"),
         keys: {
           IDP_MODE: "logto",
           IDP_ISSUER,
@@ -71,12 +144,21 @@ const targets = [
     clientId: spa["VibeEdu code-app-web"],
     files: [
       {
-        path: join(metaRoot, "..", "blockyedu", "code-app-web", ".env.development"),
+        path: resolveWorkspacePath("BlockyEdu", "code-app-web", ".env.development"),
         keys: {
-          VITE_IDP_ISSUER: IDP_ISSUER,
-          VITE_IDP_CLIENT_ID: "",
+          ...issuerKeys(),
+          ...clientIdKeys(""),
           VITE_IDP_REDIRECT_URI: "http://localhost:18081/auth/callback",
+          VITE_IDP_POST_LOGOUT_URI: "http://localhost:18081/login",
           VITE_IDP_AUDIENCE: "https://api.vibeedu.local",
+          VITE_AUTH_EXPERIENCE_URL: "http://localhost:18081",
+        },
+      },
+      {
+        path: resolveWorkspacePath("BlockyEdu", "code-app-web", ".env.local"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
         },
       },
     ],
@@ -86,16 +168,26 @@ const targets = [
     clientId: spa["VibeAgent Web"],
     files: [
       {
-        path: join(metaRoot, "..", "doerflow", "repos", "web", ".env.development"),
+        path: resolveWorkspacePath("DoerFlow", "repos", "web", ".env.development"),
         keys: {
-          PUBLIC_IDP_ISSUER: IDP_ISSUER,
-          PUBLIC_IDP_CLIENT_ID: "",
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          PUBLIC_IDP_REDIRECT_URI: "http://localhost:5174/auth/callback",
+          PUBLIC_IDP_AUDIENCE: "https://api.vibeagent.local",
+          PUBLIC_AUTH_EXPERIENCE_URL: "http://localhost:5174",
+        },
+      },
+      {
+        path: resolveWorkspacePath("DoerFlow", "repos", "web", ".env"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
           PUBLIC_IDP_REDIRECT_URI: "http://localhost:5174/auth/callback",
           PUBLIC_IDP_AUDIENCE: "https://api.vibeagent.local",
         },
       },
       {
-        path: join(metaRoot, "..", "doerflow", "repos", "api", ".env"),
+        path: resolveWorkspacePath("DoerFlow", "repos", "api", ".env"),
         keys: {
           IDP_MODE: "logto",
           IDP_ISSUER,
@@ -109,10 +201,21 @@ const targets = [
     clientId: spa["DoerFlow Admin"],
     files: [
       {
-        path: join(metaRoot, "..", "doerflow", "repos", "admin", ".env.local"),
+        path: resolveWorkspacePath("DoerFlow", "repos", "admin", ".env.development"),
         keys: {
-          NEXT_PUBLIC_IDP_ISSUER: IDP_ISSUER,
-          NEXT_PUBLIC_IDP_CLIENT_ID: "",
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          NEXT_PUBLIC_IDP_REDIRECT_URI: "http://localhost:13011/auth/callback",
+          NEXT_PUBLIC_IDP_AUDIENCE: "https://api.vibeagent.local",
+          NEXT_PUBLIC_AUTH_EXPERIENCE_URL: "http://localhost:13011",
+          NEXT_PUBLIC_APP_ORIGIN: "http://localhost:13011",
+        },
+      },
+      {
+        path: resolveWorkspacePath("DoerFlow", "repos", "admin", ".env.local"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
           NEXT_PUBLIC_IDP_REDIRECT_URI: "http://localhost:13011/auth/callback",
           NEXT_PUBLIC_IDP_AUDIENCE: "https://api.vibeagent.local",
         },
@@ -120,20 +223,65 @@ const targets = [
     ],
   },
   {
-    label: "VistaRemote admin",
-    clientId: spa["VistaRemote Admin"],
+    label: "VistaRemote client + admin",
+    clientId: spa["VistaRemote Client"],
     files: [
       {
-        path: join(metaRoot, "..", "vistaremote", "web", "apps", "admin", ".env.development"),
+        path: resolveWorkspacePath("VistaRemote", "config", "environments", "local.env"),
         keys: {
           PUBLIC_IDP_ISSUER: IDP_ISSUER,
           PUBLIC_IDP_CLIENT_ID: "",
+          PUBLIC_IDP_AUDIENCE: "https://api.vistaremote.local",
+          PUBLIC_ADMIN_IDP_CLIENT_ID: spa["VistaRemote Admin"] || "",
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaRemote", "web", "apps", "client", ".env.development"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          PUBLIC_IDP_REDIRECT_URI: "http://localhost:5173/auth/callback",
+          PUBLIC_IDP_AUDIENCE: "https://api.vistaremote.local",
+          PUBLIC_AUTH_EXPERIENCE_URL: "http://localhost:5173",
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaRemote", "web", "apps", "client", ".env"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          PUBLIC_IDP_REDIRECT_URI: "http://localhost:5173/auth/callback",
+          PUBLIC_IDP_AUDIENCE: "https://api.vistaremote.local",
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaRemote", "desktop", ".env"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaRemote", "web", "apps", "admin", ".env.development"),
+        keys: {
+          PUBLIC_IDP_ISSUER: IDP_ISSUER,
+          PUBLIC_IDP_CLIENT_ID: spa["VistaRemote Admin"] || "",
+          PUBLIC_IDP_REDIRECT_URI: "http://localhost:5175/auth/callback",
+          PUBLIC_IDP_AUDIENCE: "https://api.vistaremote.local",
+          PUBLIC_AUTH_EXPERIENCE_URL: "http://localhost:5175",
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaRemote", "web", "apps", "admin", ".env"),
+        keys: {
+          PUBLIC_IDP_ISSUER: IDP_ISSUER,
+          PUBLIC_IDP_CLIENT_ID: spa["VistaRemote Admin"] || "",
           PUBLIC_IDP_REDIRECT_URI: "http://localhost:5175/auth/callback",
           PUBLIC_IDP_AUDIENCE: "https://api.vistaremote.local",
         },
       },
       {
-        path: join(metaRoot, "..", "vistaremote", "server", ".env"),
+        path: resolveWorkspacePath("VistaRemote", "server", ".env"),
         keys: {
           IDP_MODE: "logto",
           IDP_ISSUER,
@@ -143,20 +291,36 @@ const targets = [
     ],
   },
   {
+    label: "VistaCast Admin",
+    clientId: spa["VistaCast Admin"],
+    files: [
+      {
+        path: resolveWorkspacePath("VistaCast", "admin", ".env.development"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          PUBLIC_IDP_REDIRECT_URI: "http://localhost:5176/auth/callback",
+          PUBLIC_IDP_AUDIENCE: "https://api.vistacast.local",
+        },
+      },
+    ],
+  },
+  {
     label: "SyncroBrain console",
     clientId: spa["LuminaryIoTChain iot-console-web"],
     files: [
       {
-        path: join(metaRoot, "..", "syncrobrain", "iot-console-web", ".env.development"),
+        path: resolveWorkspacePath("SyncroBrain", "iot-console-web", ".env.development"),
         keys: {
-          VITE_IDP_ISSUER: IDP_ISSUER,
-          VITE_IDP_CLIENT_ID: "",
+          ...issuerKeys(),
+          ...clientIdKeys(""),
           VITE_IDP_REDIRECT_URI: "http://localhost:5180/auth/callback",
           VITE_IDP_AUDIENCE: "https://api.iotchain.local",
+          VITE_AUTH_EXPERIENCE_URL: "http://localhost:5180",
         },
       },
       {
-        path: join(metaRoot, "..", "syncrobrain", "iot-gateway", ".env"),
+        path: resolveWorkspacePath("SyncroBrain", "iot-gateway", ".env"),
         keys: {
           IDP_MODE: "logto",
           IDP_ISSUER,
@@ -179,7 +343,7 @@ for (const t of targets) {
   for (const file of t.files) {
     const keys = { ...file.keys };
     for (const k of Object.keys(keys)) {
-      if (k.includes("CLIENT_ID")) keys[k] = t.clientId;
+      if (k.includes("CLIENT_ID") && !keys[k]) keys[k] = t.clientId;
     }
     const ok = upsertEnv(file.path, keys);
     if (ok) {
@@ -206,8 +370,12 @@ function upsertEnv(path, keys) {
   if (!existsSync(path)) return false;
   // Normalize mixed/legacy CR-only line endings so KEY= lines parse in dotenv.
   let text = readFileSync(path, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  if (text.includes("\uFFFD")) {
+    throw new Error(`mojibake in ${path}`);
+  }
   const eol = "\n";
   for (const [key, value] of Object.entries(keys)) {
+    if (value === undefined || value === null) continue;
     const line = `${key}=${formatEnvValue(value)}`;
     const re = new RegExp(`^\\s*${key}\\s*=.*$`, "m");
     if (re.test(text)) text = text.replace(re, line);

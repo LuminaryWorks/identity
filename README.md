@@ -35,8 +35,10 @@ LuminaryWorks 六产品 + 控制台的**统一登录授权服务**（Logto OIDC�
 2. `scripts/ensure-logto-admin.mjs` — 创建 **Logto Admin Console 操作员**（admin 租户；`LW_LOGTO_ADMIN_*`）；**未配置则中止**
 3. 若无 M2M：`scripts/bootstrap-m2m.mjs`（向 default 租户写入 Management API M2M，**无需先打开 Admin Welcome 页**）
 4. `scripts/register-apps.mjs` → `registered-apps.json`
-5. `scripts/sync-client-ids.mjs` → 写入各产品 `.env` / `.env.development`
-6. `scripts/seed-accounts.mjs` — 校验 `ACCOUNTS.{dev|product}.env` 或 `LW_*` 环境变量；**未配置则中止**（不自动复制、不交互）
+5. `scripts/sync-client-ids.mjs` → 写入各产品 `.env` / `.env.development` / `.env.local`（含 `NEXT_PUBLIC_*` 与 `PUBLIC_*`）
+6. `scripts/ensure-social-connectors.mjs` — 若配置了 `LOGTO_GOOGLE_CLIENT_*` / `LOGTO_GITHUB_CLIENT_*` 则创建社交连接器
+7. `scripts/seed-accounts.mjs` — 校验 `ACCOUNTS.{dev|product}.env` 或 `LW_*` 环境变量；**未配置则中止**（不自动复制、不交互）
+8. `scripts/ensure-sign-in-experience.mjs` — 邮箱/用户名密码 + 把已有社交 connector 挂到 SIE
 
 ### 部署顺序
 
@@ -200,7 +202,9 @@ node scripts/verify-social-direct-signin.mjs
 
 | 现象 | 处理 |
 |------|------|
-| 仍停在 `localhost:3001/sign-in` | `socialSignInConnectorTargets` 为空 → 跑步骤 3 |
+| 仍停在 `localhost:3001/sign-in` | IdP 无社交连接器，或旧版 Headless 假按钮走了 `direct_sign_in`。配置 connector 后跑步骤 8 |
+| 停在产品 origin 的 `/direct/social/google`（如 `:18082`） | Next.js 把 `X-Forwarded-Host` 传给了 Logto，discovery 的 `authorization_endpoint` 变成了 SPA。升级 `@luminaryworks/auth-dev-proxy@0.1.1` 并重启 SPA |
+| `oidc.invalid_client` / `PUT /api/experience` 500 | 产品 `NEXT_PUBLIC_IDP_CLIENT_ID` 与 `registered-apps.json` 不一致 → `node scripts/sync-client-ids.mjs` 后**重启 SPA** |
 | `redirect_uri_mismatch` | Google/GitHub 回调不是 `http://localhost:3001/callback/<id>` |
 | SPA callback 报错 | 产品 `VITE_IDP_REDIRECT_URI` 须在 `apps.json` 已注册 |
 

@@ -96,6 +96,8 @@ if (Test-Path .\registered-apps.json) {
   Write-Host "> Seeding Identity roles + accounts (profile=$profile) ..."
   $env:IDENTITY_ACCOUNTS_PROFILE = $profile
   Invoke-Node "scripts/seed-accounts.mjs"
+  Write-Host "> Ensuring social connectors from LOGTO_GOOGLE_* / LOGTO_GITHUB_* (optional) ..."
+  Invoke-Node "scripts/ensure-social-connectors.mjs"
   Write-Host "> Ensuring sign-in accepts email or username ..."
   Invoke-Node "scripts/ensure-sign-in-experience.mjs"
 }

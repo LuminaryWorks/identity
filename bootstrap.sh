@@ -70,6 +70,8 @@ if [ -f registered-apps.json ]; then
   echo "▶ Checking ACCOUNTS.${PROFILE}.env / LW_* env (abort if incomplete) ..."
   echo "▶ Seeding Identity roles + accounts (profile=${PROFILE}) ..."
   IDENTITY_ACCOUNTS_PROFILE="${PROFILE}" node scripts/seed-accounts.mjs
+  echo "▶ Ensuring social connectors from LOGTO_GOOGLE_* / LOGTO_GITHUB_* (optional) ..."
+  node scripts/ensure-social-connectors.mjs
   echo "▶ Ensuring sign-in accepts email or username ..."
   node scripts/ensure-sign-in-experience.mjs
 fi
