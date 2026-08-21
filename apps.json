@@ -40,8 +40,16 @@
     {
       "name": "VistaCast Admin",
       "type": "SPA",
-      "redirectUris": ["http://localhost:5176/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:5176/login"]
+      "redirectUris": [
+        "http://127.0.0.1:13101/auth/callback",
+        "http://localhost:13101/auth/callback",
+        "http://localhost:5176/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://127.0.0.1:13101/",
+        "http://localhost:13101/",
+        "http://localhost:5176/login"
+      ]
     },
     {
       "name": "VistaRemote Admin",

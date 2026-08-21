@@ -295,12 +295,41 @@ const targets = [
     clientId: spa["VistaCast Admin"],
     files: [
       {
-        path: resolveWorkspacePath("VistaCast", "admin", ".env.development"),
+        path: resolveWorkspacePath("VistaCast", "web", ".env.example"),
         keys: {
           ...issuerKeys(),
           ...clientIdKeys(""),
-          PUBLIC_IDP_REDIRECT_URI: "http://localhost:5176/auth/callback",
+          PUBLIC_IDP_REDIRECT_URI: "http://127.0.0.1:13101/auth/callback",
+          PUBLIC_IDP_POST_LOGOUT_URI: "http://127.0.0.1:13101/",
           PUBLIC_IDP_AUDIENCE: "https://api.vistacast.local",
+          PUBLIC_AUTH_EXPERIENCE_URL: "http://127.0.0.1:13101",
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaCast", "web", ".env"),
+        keys: {
+          ...issuerKeys(),
+          ...clientIdKeys(""),
+          PUBLIC_IDP_REDIRECT_URI: "http://127.0.0.1:13101/auth/callback",
+          PUBLIC_IDP_POST_LOGOUT_URI: "http://127.0.0.1:13101/",
+          PUBLIC_IDP_AUDIENCE: "https://api.vistacast.local",
+          PUBLIC_AUTH_EXPERIENCE_URL: "http://127.0.0.1:13101",
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaCast", "server", ".env.example"),
+        keys: {
+          IDP_MODE: "logto",
+          IDP_ISSUER,
+          IDP_AUDIENCE: "https://api.vistacast.local",
+        },
+      },
+      {
+        path: resolveWorkspacePath("VistaCast", "server", ".env"),
+        keys: {
+          IDP_MODE: "logto",
+          IDP_ISSUER,
+          IDP_AUDIENCE: "https://api.vistacast.local",
         },
       },
     ],
