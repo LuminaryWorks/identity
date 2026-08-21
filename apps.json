@@ -86,8 +86,8 @@
     {
       "name": "LuminaryIoTChain iot-console-web",
       "type": "SPA",
-      "redirectUris": ["http://localhost:5180/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:5180/login"]
+      "redirectUris": ["http://localhost:15180/auth/callback"],
+      "postLogoutRedirectUris": ["http://localhost:15180/login"]
     }
   ],
   "apiResources": [

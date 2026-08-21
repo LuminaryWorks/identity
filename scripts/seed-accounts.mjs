@@ -18,6 +18,7 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { LogtoManagementProvider } from "./lib/logto-management-provider.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PLACEHOLDER_PASSWORDS = new Set(["", "CHANGE_ME", "changeme", "REPLACE_ME", "replace_me"]);
@@ -58,7 +59,12 @@ if (!appId || !appSecret) {
   process.exit(1);
 }
 
-const token = await getToken();
+const management = new LogtoManagementProvider({
+  endpoint,
+  clientId: appId,
+  clientSecret: appSecret,
+  resource,
+});
 await ensureJwtRolesClaim();
 const roleIdByName = await ensureRoles(manifest.roles);
 const accountsOut = [];
@@ -262,7 +268,7 @@ async function ensureUser({ email, username, name, password: pwd }) {
     }
     return user;
   }
-  return api("POST", "/api/users", {
+  return management.createUser({
     primaryEmail: email,
     username,
     password: pwd,
@@ -281,41 +287,8 @@ async function ensureUserHasRole(roleId, userId, roleName, email) {
   }
 }
 
-async function getToken() {
-  const basic = Buffer.from(`${appId}:${appSecret}`).toString("base64");
-  const res = await fetch(`${endpoint}/oidc/token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${basic}`,
-    },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      resource,
-      scope: "all",
-    }),
-  });
-  if (!res.ok) throw new Error(`Token failed: ${res.status} ${await res.text()}`);
-  return (await res.json()).access_token;
-}
-
-async function api(method, path, body) {
-  const res = await fetch(`${endpoint}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${text}`);
-  if (res.status === 204 || !text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
+function api(method, path, body) {
+  return management.request(method, path, body);
 }
 
 function asList(payload) {

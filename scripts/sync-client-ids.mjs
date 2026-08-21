@@ -343,9 +343,9 @@ const targets = [
         keys: {
           ...issuerKeys(),
           ...clientIdKeys(""),
-          VITE_IDP_REDIRECT_URI: "http://localhost:5180/auth/callback",
+          VITE_IDP_REDIRECT_URI: "http://localhost:15180/auth/callback",
           VITE_IDP_AUDIENCE: "https://api.iotchain.local",
-          VITE_AUTH_EXPERIENCE_URL: "http://localhost:5180",
+          VITE_AUTH_EXPERIENCE_URL: "http://localhost:15180",
         },
       },
       {

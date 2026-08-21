@@ -145,6 +145,34 @@ IDENTITY_ACCOUNTS_PROFILE=dev node scripts/seed-accounts.mjs
 
 脚本读取 [`apps.json`](./apps.json)，幂等创建 SPA 与 API 资源，并把 `CLIENT_ID` 写入 `registered-apps.json`。
 
+### 中央 Identity Management Provider
+
+`scripts/lib/identity-management-provider.mjs` 定义厂商无关的中央管理抽象；默认实现是
+`LogtoManagementProvider`。它显式公开 capability，并由统一的
+`IdentityManagementError` 返回稳定错误码。
+
+| 能力 | Logto 默认实现 |
+|------|----------------|
+| 通用 Management API 请求 | 支持（供中央运维脚本复用） |
+| 用户读取 / 创建 | 支持 |
+| 用户禁用 / 启用 | 支持（映射 Logto `isSuspended`） |
+| 用户邀请 | **不支持**，抛出 `IDENTITY_CAPABILITY_UNSUPPORTED` |
+| 组织 / 角色高级抽象 | 尚未提供；现有初始化脚本暂走通用请求 |
+
+`LogtoManagementClient` 负责 client credentials token、按过期时间缓存，以及 401 后清缓存并重试一次。
+`LOGTO_M2M_APP_ID` / `LOGTO_M2M_APP_SECRET` 只允许存在于本仓中央运维环境：
+
+- 不得写入产品仓、`shared` 包、浏览器 bundle 或 `registered-apps.json`。
+- 产品运行时只消费 OIDC issuer、公开 `client_id` 和 API audience。
+- `register-apps.mjs` 与 `seed-accounts.mjs` 已复用该 provider；新增中央运维脚本也应从
+  `scripts/lib/logto-management-provider.mjs` 导入，禁止复制 token 请求代码。
+
+Mock 单测不需要真实管理凭据：
+
+```bash
+node --test scripts/lib/*.test.mjs
+```
+
 ## 接入产品
 
 | 端 | 依赖 | 配置 |

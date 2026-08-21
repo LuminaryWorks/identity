@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { LogtoManagementProvider } from "./lib/logto-management-provider.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -32,9 +33,14 @@ if (!appId || !appSecret) {
   process.exit(1);
 }
 
+const management = new LogtoManagementProvider({
+  endpoint,
+  clientId: appId,
+  clientSecret: appSecret,
+  resource,
+});
 const apps = JSON.parse(readFileSync(join(root, "apps.json"), "utf8"));
 
-const token = await getToken();
 const existingApps = asList(await api("GET", "/api/applications?page=1&page_size=20"));
 const existingResources = asList(await api("GET", "/api/resources?page=1&page_size=20"));
 
@@ -105,35 +111,8 @@ writeFileSync(join(root, "registered-apps.json"), `${JSON.stringify(result, null
 console.log("\n✓ Done. CLIENT_IDs written to identity/registered-apps.json");
 
 // ── helpers ──
-async function getToken() {
-  const basic = Buffer.from(`${appId}:${appSecret}`).toString("base64");
-  const res = await fetch(`${endpoint}/oidc/token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${basic}`,
-    },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      resource,
-      scope: "all",
-    }),
-  });
-  if (!res.ok) throw new Error(`Token failed: ${res.status} ${await res.text()}`);
-  return (await res.json()).access_token;
-}
-
-async function api(method, path, body) {
-  const res = await fetch(`${endpoint}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${await res.text()}`);
-  return res.status === 204 ? null : res.json();
+function api(method, path, body) {
+  return management.request(method, path, body);
 }
 
 function asList(payload) {
