@@ -8,11 +8,12 @@ LuminaryWorks 六产品 + 控制台的**统一登录授权服务**（Logto OIDC�
 
 ## 职责边界
 
-| Logto（本服务） | 各产品 |
-|-----------------|--------|
+| Logto（本服务，当前默认 IdP） | 各产品 |
+|-----------------------------|--------|
 | 身份认证、SSO、组织/租户、产品准入 | **Casbin** 资源权限（Dashboard / 课程 / 设备…） |
-| Experience API 支撑 Headless 登录 UI | 品牌登录页 + `@luminary/auth-react` |
-| 签发 JWT（身份 + 准入） | JWKS 验签 + 业务 ACL，**不把资源权限塞进 Token** |
+| Experience API 支撑 Headless 登录 UI | 品牌登录页 + `@luminaryworks/auth-react`（Login Experience Adapter） |
+| 签发 JWT（身份 + 准入） | `@luminaryworks/auth-core` 验签 → `LuminaryPrincipal`；业务 ACL **不进 Token** |
+| 中央 Management API（仅本仓脚本） | 产品 **禁止** 持有 M2M；外部身份键是 `issuer + subject` |
 
 ## 一键启动
 
@@ -177,9 +178,9 @@ node --test scripts/lib/*.test.mjs
 
 | 端 | 依赖 | 配置 |
 |----|------|------|
-| 后端 (NestJS) | `@luminaryworks/auth-core` | `IDP_ISSUER=http://localhost:3001/oidc` |
-| 前端 (SPA) | `@luminary/auth-react` | `VITE_IDP_ISSUER` + `VITE_IDP_CLIENT_ID` + `VITE_IDP_REDIRECT_URI` |
-| 资源权限 | 产品内 Casbin | 见 MetaRepo IAM 规格 §4 |
+| 后端 (NestJS) | `@luminaryworks/auth-core` | `IDP_ISSUER=http://localhost:3001/oidc`（上游 issuer，与 JWT `iss` 一致） |
+| 前端 (SPA) | `@luminaryworks/auth-react` | `VITE_IDP_*` + 可选 `VITE_AUTH_GATEWAY_URL` / `VITE_AUTH_EXPERIENCE_URL` |
+| 资源权限 | 产品内 Casbin | 见 MetaRepo IAM 规格 §4；映射 `issuer + sub` → 本地用户 |
 | 商业权益 | 中央 Entitlement（不进 JWT） | 401 身份 / 402 权益 / 403 ACL |
 
 各产品 Redirect URI 见 `apps.json`。完整指南：[docs/develop/unified-login](https://github.com/LuminaryWorks/docs)。
@@ -190,7 +191,7 @@ DoerFlow 特例：Logto 平台会话与 wallet/SIWE 会话独立；Logto 不证�
 
 默认路径：**各产品自建品牌登录页**，调用 Experience API / OIDC PKCE；不要 fork Logto Experience 源码。Management API 仅后端运维使用。
 
-产品侧 `@luminary/auth-react` 的 `HeadlessLoginPanel`：
+产品侧 `@luminaryworks/auth-react` 的 `HeadlessLoginPanel`：
 
 | UI | 行为 |
 |----|------|
