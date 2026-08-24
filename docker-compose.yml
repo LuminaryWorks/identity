@@ -16,7 +16,7 @@
 # 自动启动：服务均 restart: unless-stopped。
 # Docker Desktop 启动后会自动恢复本栈（需本机已执行过一次 compose up，且未 down）。
 
-name: identity
+name: luminary-works-identity
 
 services:
   identity-db:
