@@ -18,7 +18,8 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LogtoManagementProvider } from "./lib/logto-management-provider.mjs";
+import { createIdentityManagementProvider } from "./lib/create-identity-management-provider.mjs";
+import { assertLogtoManagementPlugin } from "./lib/iam-provider.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PLACEHOLDER_PASSWORDS = new Set(["", "CHANGE_ME", "changeme", "REPLACE_ME", "replace_me"]);
@@ -59,11 +60,13 @@ if (!appId || !appSecret) {
   process.exit(1);
 }
 
-const management = new LogtoManagementProvider({
+assertLogtoManagementPlugin({ ...envMap, ...process.env });
+const management = createIdentityManagementProvider({
   endpoint,
   clientId: appId,
   clientSecret: appSecret,
   resource,
+  provider: process.env.IAM_PROVIDER || envMap.IAM_PROVIDER,
 });
 await ensureJwtRolesClaim();
 const roleIdByName = await ensureRoles(manifest.roles);

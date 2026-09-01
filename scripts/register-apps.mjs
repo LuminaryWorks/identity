@@ -13,7 +13,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { LogtoManagementProvider } from "./lib/logto-management-provider.mjs";
+import { createIdentityManagementProvider } from "./lib/create-identity-management-provider.mjs";
+import { assertLogtoManagementPlugin } from "./lib/iam-provider.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -33,11 +34,13 @@ if (!appId || !appSecret) {
   process.exit(1);
 }
 
-const management = new LogtoManagementProvider({
+assertLogtoManagementPlugin({ ...env, ...process.env });
+const management = createIdentityManagementProvider({
   endpoint,
   clientId: appId,
   clientSecret: appSecret,
   resource,
+  provider: process.env.IAM_PROVIDER || env.IAM_PROVIDER,
 });
 const apps = JSON.parse(readFileSync(join(root, "apps.json"), "utf8"));
 
