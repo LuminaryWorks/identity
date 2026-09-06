@@ -13,7 +13,7 @@ LuminaryWorks 六产品 + 控制台的**统一登录授权服务**。产品只�
 | 身份认证、SSO、组织/租户、产品准入 | **Casbin** 资源权限（Dashboard / 课程 / 设备…） |
 | Experience API 支撑 Headless 登录 UI | 品牌登录页 + `@luminaryworks/auth-react`（Login Experience Adapter） |
 | 签发 JWT（身份 + 准入） | `@luminaryworks/auth-core` 验签 → `LuminaryPrincipal`；业务 ACL **不进 Token** |
-| 中央 Management API（仅本仓脚本） | 产品 **禁止** 持有 M2M；外部身份键是 `issuer + subject` |
+| 中央 Management API（仅本仓脚本） | 产品 **禁止** 持有 **Management API** M2M；外部身份键是 `issuer + subject`。VistaCast/SyncroBrain 可持有 **DoerFlow API** audience 的产品 M2M（见下） |
 
 ## 一键启动
 
@@ -144,7 +144,16 @@ node scripts/sync-client-ids.mjs
 IDENTITY_ACCOUNTS_PROFILE=dev node scripts/seed-accounts.mjs
 ```
 
-脚本读取 [`apps.json`](./apps.json)，幂等创建 SPA 与 API 资源，并把 `CLIENT_ID` 写入 `registered-apps.json`。
+脚本读取 [`apps.json`](./apps.json)，幂等创建 SPA、API 资源、**产品 M2M**，并把 `CLIENT_ID` 写入 `registered-apps.json`（**不含 secret**）。
+
+产品服务 M2M（与本仓 Management API M2M 分离）：
+
+| 应用名 | Caller | Audience | Scopes | Callback |
+|--------|--------|----------|--------|----------|
+| `VistaCast Service` | VistaCast server | `https://api.doerflow.local` | `integration.provider.register` · `integration.event.submit` · `integration.callback.read` | 无 |
+| `SyncroBrain Gateway` | SyncroBrain iot-gateway | 同上 | 同上 | 无 |
+
+Token 请求：`grant_type=client_credentials` + `resource=https://api.doerflow.local` + 上表 scopes。Client secret 只存在于产品服务私密 env / Logto Admin，禁止写入 `apps.json` 或本仓 Git。历史 SPA audience `https://api.vibeagent.local` 保留。
 
 ### 中央 Identity Management Provider
 

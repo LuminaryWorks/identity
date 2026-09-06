@@ -1,5 +1,5 @@
 {
-  "$comment": "LuminaryWorks 六产品 + 门户的 Logto Application 注册清单。register-apps.mjs 幂等创建。SPA 用 PKCE；后端资源用 API resource。",
+  "$comment": "LuminaryWorks 六产品 + 门户的 Logto Application 注册清单。register-apps.mjs 幂等创建。SPA 用 PKCE；后端资源用 API resource；产品服务用 MachineToMachine（无 callback，audience=resourceIndicator）。禁止在本文件写入 client secret。",
   "spaApplications": [
     {
       "name": "LuminaryWorks Portal",
@@ -10,14 +10,26 @@
     {
       "name": "DataView (DataLuminary)",
       "type": "SPA",
-      "redirectUris": ["http://localhost:3003/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:3003/"]
+      "redirectUris": [
+        "http://localhost:3003/auth/callback",
+        "http://localhost:3013/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:3003/",
+        "http://localhost:3013/"
+      ]
     },
     {
       "name": "VibeEdu edu-app-web",
       "type": "SPA",
-      "redirectUris": ["http://localhost:18082/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:18082/login"]
+      "redirectUris": [
+        "http://localhost:18082/auth/callback",
+        "https://localhost:18082/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:18082/login",
+        "https://localhost:18082/login"
+      ]
     },
     {
       "name": "VibeEdu code-app-web",
@@ -94,8 +106,50 @@
     { "name": "DataTalk API", "indicator": "https://api.dataluminary.local" },
     { "name": "VibeEdu API", "indicator": "https://api.vibeedu.local" },
     { "name": "VibeAgent API", "indicator": "https://api.vibeagent.local" },
+    {
+      "name": "DoerFlow API",
+      "indicator": "https://api.doerflow.local",
+      "scopes": [
+        {
+          "name": "integration.provider.register",
+          "description": "Register or update DoerFlow integration provider offerings"
+        },
+        {
+          "name": "integration.event.submit",
+          "description": "Submit integration events that may create DoerFlow tasks"
+        },
+        {
+          "name": "integration.callback.read",
+          "description": "Read signed job/task lifecycle callbacks and correlation status"
+        }
+      ]
+    },
     { "name": "VistaCast API", "indicator": "https://api.vistacast.local" },
     { "name": "VistaRemote API", "indicator": "https://api.vistaremote.local" },
     { "name": "IoT Gateway API", "indicator": "https://api.iotchain.local" }
+  ],
+  "m2mApplications": [
+    {
+      "name": "VistaCast Service",
+      "type": "MachineToMachine",
+      "description": "VistaCast server M2M caller for DoerFlow provider registration, event submit, and callback read. Token audience is DoerFlow API; no OIDC redirect/callback.",
+      "resourceIndicator": "https://api.doerflow.local",
+      "scopes": [
+        "integration.provider.register",
+        "integration.event.submit",
+        "integration.callback.read"
+      ]
+    },
+    {
+      "name": "SyncroBrain Gateway",
+      "type": "MachineToMachine",
+      "description": "SyncroBrain iot-gateway M2M caller for DoerFlow provider registration, event submit, and callback read. Token audience is DoerFlow API; no OIDC redirect/callback.",
+      "resourceIndicator": "https://api.doerflow.local",
+      "scopes": [
+        "integration.provider.register",
+        "integration.event.submit",
+        "integration.callback.read"
+      ]
+    }
   ]
 }
