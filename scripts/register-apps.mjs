@@ -23,10 +23,19 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 
 const env = loadEnv(join(root, ".env"));
-const endpoint = (env.IDENTITY_ENDPOINT || "http://localhost:3001").replace(/\/$/, "");
-const appId = env.LOGTO_M2M_APP_ID;
-const appSecret = env.LOGTO_M2M_APP_SECRET;
-const resource = env.LOGTO_MANAGEMENT_API_RESOURCE || "https://default.logto.app/api";
+const endpoint = (
+  process.env.IDENTITY_ENDPOINT ||
+  env.IDENTITY_ENDPOINT ||
+  "http://localhost:3001"
+).replace(/\/$/, "");
+const appId = process.env.LOGTO_M2M_APP_ID || env.LOGTO_M2M_APP_ID;
+const appSecret = process.env.LOGTO_M2M_APP_SECRET || env.LOGTO_M2M_APP_SECRET;
+const resource =
+  process.env.LOGTO_MANAGEMENT_API_RESOURCE ||
+  env.LOGTO_MANAGEMENT_API_RESOURCE ||
+  "https://default.logto.app/api";
+const registeredAppsPath =
+  process.env.IDENTITY_REGISTERED_APPS_PATH || join(root, "registered-apps.json");
 
 if (!appId || !appSecret) {
   console.error(
@@ -53,8 +62,8 @@ const result = await registerIdentityApps({
 });
 const publicResult = publicAppRegistrationResult(result);
 
-writeFileSync(join(root, "registered-apps.json"), `${JSON.stringify(publicResult, null, 2)}\n`);
-console.log("\n✓ Done. CLIENT_IDs written to identity/registered-apps.json (no secrets)");
+writeFileSync(registeredAppsPath, `${JSON.stringify(publicResult, null, 2)}\n`);
+console.log(`\n✓ Done. CLIENT_IDs written to ${registeredAppsPath} (no secrets)`);
 
 function loadEnv(path) {
   try {

@@ -13,7 +13,9 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const envPath = join(root, ".env");
+const dbContainer = process.env.IDENTITY_DB_CONTAINER || "luminary-identity-db";
 const endpoint = (
+  process.env.IDENTITY_ENDPOINT ||
   readEnvMap().IDENTITY_ENDPOINT ||
   "http://localhost:3001"
 ).replace(/\/$/, "");
@@ -79,7 +81,7 @@ function writeM2mCreds(appId, secret) {
 
 function resolveManagementApiRoleId() {
   const out = execSync(
-    'docker exec luminary-identity-db psql -U logto -d logto -tAc "SET ROLE logto_tenant_logto_default; SELECT id FROM roles WHERE name = \'Logto Management API access\' AND type = \'MachineToMachine\' LIMIT 1;"',
+    `docker exec ${dbContainer} psql -U logto -d logto -tAc "SET ROLE logto_tenant_logto_default; SELECT id FROM roles WHERE name = 'Logto Management API access' AND type = 'MachineToMachine' LIMIT 1;"`,
     { encoding: "utf8" },
   );
   const roleId = out
@@ -119,7 +121,7 @@ SELECT id, name, type FROM applications WHERE id='${appId}';
 `;
 
   console.log("Creating M2M app", appId, "(role", roleId + ")");
-  const out = execSync("docker exec -i luminary-identity-db psql -U logto -d logto", {
+  const out = execSync(`docker exec -i ${dbContainer} psql -U logto -d logto`, {
     input: sql,
     encoding: "utf8",
   });

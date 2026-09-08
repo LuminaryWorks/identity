@@ -1,5 +1,5 @@
 {
-  "$comment": "LuminaryWorks 六产品 + 门户的 Logto Application 注册清单。register-apps.mjs 幂等创建。SPA 用 PKCE；后端资源用 API resource；产品服务用 MachineToMachine（无 callback，audience=resourceIndicator）。禁止在本文件写入 client secret。",
+  "$comment": "LuminaryWorks 六产品 + 门户 + Control Console 的 Logto Application 注册清单。register-apps.mjs 幂等创建。SPA 用 PKCE；后端资源用 API resource；产品服务用 MachineToMachine（无 callback，audience=resourceIndicator）。禁止在本文件写入 client secret。Control Console 生产环境在 Logto 中追加 HTTPS redirect，不要把密钥写入 Git。Logto Admin Console（:3002）不是本清单中的业务控制台。",
   "spaApplications": [
     {
       "name": "LuminaryWorks Portal",
@@ -100,6 +100,18 @@
       "type": "SPA",
       "redirectUris": ["http://localhost:15180/auth/callback"],
       "postLogoutRedirectUris": ["http://localhost:15180/login"]
+    },
+    {
+      "name": "LuminaryWorks Control Console",
+      "type": "SPA",
+      "redirectUris": [
+        "http://localhost:3050/auth/callback",
+        "http://127.0.0.1:3050/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:3050/",
+        "http://127.0.0.1:3050/"
+      ]
     }
   ],
   "apiResources": [
@@ -126,7 +138,21 @@
     },
     { "name": "VistaCast API", "indicator": "https://api.vistacast.local" },
     { "name": "VistaRemote API", "indicator": "https://api.vistaremote.local" },
-    { "name": "IoT Gateway API", "indicator": "https://api.iotchain.local" }
+    { "name": "IoT Gateway API", "indicator": "https://api.iotchain.local" },
+    {
+      "name": "Entitlement API",
+      "indicator": "https://entitlement.luminaryworks.dev",
+      "scopes": [
+        {
+          "name": "entitlement:admin",
+          "description": "Superadmin Control Console and Entitlement /v1/admin APIs"
+        },
+        {
+          "name": "entitlement:read",
+          "description": "Read Entitlement catalog, health, and non-destructive admin lists"
+        }
+      ]
+    }
   ],
   "m2mApplications": [
     {

@@ -28,7 +28,8 @@ const rootEnv = loadEnvFile(join(root, ".env"));
 const profile = resolveProfile(rootEnv);
 const accountsFilePath = join(root, `ACCOUNTS.${profile}.env`);
 const accountsExamplePath = join(root, `ACCOUNTS.${profile}.env.example`);
-const seedStatePath = join(root, `ACCOUNTS.${profile}.seeded.json`);
+const seedStatePath =
+  process.env.IDENTITY_SEED_STATE_PATH || join(root, `ACCOUNTS.${profile}.seeded.json`);
 
 const fileEnv = loadEnvFile(accountsFilePath);
 const envMap = mergeEnv(fileEnv, process.env, rootEnv);
