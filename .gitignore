@@ -1,4 +1,6 @@
 .env
+dev.env
+.env.product
 registered-apps.json
 ACCOUNTS.dev.env
 ACCOUNTS.product.env
