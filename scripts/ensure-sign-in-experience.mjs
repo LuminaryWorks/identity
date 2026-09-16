@@ -109,6 +109,13 @@ const patch = {
     ...(current.signIn || {}),
     methods: desiredMethods,
   },
+  // Username + password self-register (Headless NewPasswordIdentity).
+  // Email/phone sign-up requires verification codes — not enabled here.
+  signUp: {
+    identifiers: ["username"],
+    password: true,
+    verify: false,
+  },
   ...(socialTargets.length ? { socialSignInConnectorTargets: socialTargets } : {}),
   customCss: `
 #app div[class*='socialLinkList'] {
@@ -145,6 +152,11 @@ console.log("✓ Sign-in experience: email + username password enabled");
 console.log(
   "  methods:",
   (updated.signIn?.methods || []).map((m) => m.identifier).join(", "),
+);
+console.log(
+  "✓ Sign-up:",
+  (updated.signUp?.identifiers || []).join(", ") || "(none)",
+  updated.signUp?.password ? "+ password" : "",
 );
 if (socialTargets.length) {
   console.log(
