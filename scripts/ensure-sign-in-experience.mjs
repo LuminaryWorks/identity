@@ -27,11 +27,18 @@ function readEnvMap() {
   return map;
 }
 
-const env = readEnvMap();
-const endpoint = (env.IDENTITY_ENDPOINT || "http://localhost:3001").replace(/\/$/, "");
-const appId = env.LOGTO_M2M_APP_ID;
-const appSecret = env.LOGTO_M2M_APP_SECRET;
-const resource = env.LOGTO_MANAGEMENT_API_RESOURCE || "https://default.logto.app/api";
+const envFile = readEnvMap();
+const endpoint = (
+  process.env.IDENTITY_ENDPOINT ||
+  envFile.IDENTITY_ENDPOINT ||
+  "http://localhost:3001"
+).replace(/\/$/, "");
+const appId = process.env.LOGTO_M2M_APP_ID || envFile.LOGTO_M2M_APP_ID;
+const appSecret = process.env.LOGTO_M2M_APP_SECRET || envFile.LOGTO_M2M_APP_SECRET;
+const resource =
+  process.env.LOGTO_MANAGEMENT_API_RESOURCE ||
+  envFile.LOGTO_MANAGEMENT_API_RESOURCE ||
+  "https://default.logto.app/api";
 
 if (!appId || !appSecret) {
   console.error("✗ Missing LOGTO_M2M_APP_ID/SECRET. Run bootstrap-m2m.mjs first.");

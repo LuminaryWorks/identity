@@ -4,19 +4,27 @@
     {
       "name": "LuminaryWorks Portal",
       "type": "SPA",
-      "redirectUris": ["http://localhost:3000/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:3000/"]
+      "redirectUris": [
+        "http://localhost:3000/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:3000/"
+      ]
     },
     {
       "name": "DataView (DataLuminary)",
       "type": "SPA",
       "redirectUris": [
         "http://localhost:3003/auth/callback",
-        "http://localhost:3013/auth/callback"
+        "http://localhost:3013/auth/callback",
+        "https://app.dataluminary.dev/auth/callback",
+        "https://demo.dataluminary.dev/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://localhost:3003/",
-        "http://localhost:3013/"
+        "http://localhost:3013/",
+        "https://app.dataluminary.dev/",
+        "https://demo.dataluminary.dev/"
       ]
     },
     {
@@ -24,30 +32,50 @@
       "type": "SPA",
       "redirectUris": [
         "http://localhost:18082/auth/callback",
-        "https://localhost:18082/auth/callback"
+        "https://localhost:18082/auth/callback",
+        "https://blockyedu.com/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://localhost:18082/login",
-        "https://localhost:18082/login"
+        "https://localhost:18082/login",
+        "https://blockyedu.com/login"
       ]
     },
     {
       "name": "VibeEdu code-app-web",
       "type": "SPA",
-      "redirectUris": ["http://localhost:18081/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:18081/login"]
+      "redirectUris": [
+        "http://localhost:18081/auth/callback",
+        "https://code.blockyedu.com/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:18081/login",
+        "https://code.blockyedu.com/login"
+      ]
     },
     {
       "name": "VibeAgent Web",
       "type": "SPA",
-      "redirectUris": ["http://localhost:5174/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:5174/login"]
+      "redirectUris": [
+        "http://localhost:5174/auth/callback",
+        "https://app.doerflow.dev/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:5174/login",
+        "https://app.doerflow.dev/login"
+      ]
     },
     {
       "name": "DoerFlow Admin",
       "type": "SPA",
-      "redirectUris": ["http://localhost:13011/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:13011/login"]
+      "redirectUris": [
+        "http://localhost:13011/auth/callback",
+        "https://admin.doerflow.dev/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:13011/login",
+        "https://admin.doerflow.dev/login"
+      ]
     },
     {
       "name": "VistaCast Admin",
@@ -55,12 +83,16 @@
       "redirectUris": [
         "http://127.0.0.1:13101/auth/callback",
         "http://localhost:13101/auth/callback",
-        "http://localhost:5176/auth/callback"
+        "http://localhost:5176/auth/callback",
+        "https://app.vistacast.dev/auth/callback",
+        "https://admin.vistacast.dev/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://127.0.0.1:13101/",
         "http://localhost:13101/",
-        "http://localhost:5176/login"
+        "http://localhost:5176/login",
+        "https://app.vistacast.dev/",
+        "https://admin.vistacast.dev/"
       ]
     },
     {
@@ -68,11 +100,13 @@
       "type": "SPA",
       "redirectUris": [
         "http://localhost:5175/auth/callback",
-        "http://127.0.0.1:5175/auth/callback"
+        "http://127.0.0.1:5175/auth/callback",
+        "https://admin.remote.vistacast.dev/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://localhost:5175/login",
-        "http://127.0.0.1:5175/login"
+        "http://127.0.0.1:5175/login",
+        "https://admin.remote.vistacast.dev/login"
       ]
     },
     {
@@ -84,7 +118,8 @@
         "http://localhost:17890/auth/callback",
         "http://127.0.0.1:17890/auth/callback",
         "http://127.0.0.1:17891/auth/callback",
-        "http://localhost:17891/auth/callback"
+        "http://localhost:17891/auth/callback",
+        "https://app.remote.vistacast.dev/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://localhost:5173/login",
@@ -92,32 +127,50 @@
         "http://localhost:17890/login",
         "http://127.0.0.1:17890/login",
         "http://127.0.0.1:17891/login",
-        "http://localhost:17891/login"
+        "http://localhost:17891/login",
+        "https://app.remote.vistacast.dev/login"
       ]
     },
     {
       "name": "LuminaryIoTChain iot-console-web",
       "type": "SPA",
-      "redirectUris": ["http://localhost:15180/auth/callback"],
-      "postLogoutRedirectUris": ["http://localhost:15180/login"]
+      "redirectUris": [
+        "http://localhost:15180/auth/callback",
+        "https://app.syncrobrain.com/auth/callback"
+      ],
+      "postLogoutRedirectUris": [
+        "http://localhost:15180/login",
+        "https://app.syncrobrain.com/login"
+      ]
     },
     {
       "name": "LuminaryWorks Control Console",
       "type": "SPA",
       "redirectUris": [
         "http://localhost:3050/auth/callback",
-        "http://127.0.0.1:3050/auth/callback"
+        "http://127.0.0.1:3050/auth/callback",
+        "https://console.luminaryworks.dev/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://localhost:3050/",
-        "http://127.0.0.1:3050/"
+        "http://127.0.0.1:3050/",
+        "https://console.luminaryworks.dev/"
       ]
     }
   ],
   "apiResources": [
-    { "name": "DataTalk API", "indicator": "https://api.dataluminary.local" },
-    { "name": "VibeEdu API", "indicator": "https://api.vibeedu.local" },
-    { "name": "VibeAgent API", "indicator": "https://api.vibeagent.local" },
+    {
+      "name": "DataTalk API",
+      "indicator": "https://api.dataluminary.local"
+    },
+    {
+      "name": "VibeEdu API",
+      "indicator": "https://api.vibeedu.local"
+    },
+    {
+      "name": "VibeAgent API",
+      "indicator": "https://api.vibeagent.local"
+    },
     {
       "name": "DoerFlow API",
       "indicator": "https://api.doerflow.local",
@@ -136,9 +189,18 @@
         }
       ]
     },
-    { "name": "VistaCast API", "indicator": "https://api.vistacast.local" },
-    { "name": "VistaRemote API", "indicator": "https://api.vistaremote.local" },
-    { "name": "IoT Gateway API", "indicator": "https://api.iotchain.local" },
+    {
+      "name": "VistaCast API",
+      "indicator": "https://api.vistacast.local"
+    },
+    {
+      "name": "VistaRemote API",
+      "indicator": "https://api.vistaremote.local"
+    },
+    {
+      "name": "IoT Gateway API",
+      "indicator": "https://api.iotchain.local"
+    },
     {
       "name": "Entitlement API",
       "indicator": "https://entitlement.luminaryworks.dev",
