@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LuminaryWorks register email policy",
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["allowlist", "blocklist", "off"]
+    },
+    "allowlist": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "blocklist": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "ipDailyLimit": { "type": "integer", "minimum": 0 },
+    "codeHourlyLimit": { "type": "integer", "minimum": 0 }
+  },
+  "required": ["mode"]
+}
