@@ -16,10 +16,16 @@
  * Usage (from identity/):
  *   node scripts/ensure-logto-admin.mjs
  */
-import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  asList,
+  createAdminApi,
+  getAdminAccessToken,
+  loadEnvFile,
+  readMAdminSecret,
+} from "./lib/admin-tenant-client.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const envPath = join(root, ".env");
@@ -45,8 +51,9 @@ const resetPassword = isTruthy(envMap.LW_LOGTO_ADMIN_RESET_PASSWORD);
 
 assertConfigured(username, password);
 
-const mAdminSecret = readMAdminSecret();
-const token = await getAdminAccessToken(mAdminSecret);
+const mAdminSecret = readMAdminSecret({ dbContainer, dbUser, dbName });
+const token = await getAdminAccessToken(adminEndpoint, mAdminSecret);
+const api = createAdminApi(adminEndpoint);
 const user = await ensureAdminUser(token);
 await ensureOrgMembership(token, user.id);
 await ensureUserRoles(token, user.id);
@@ -92,26 +99,6 @@ function isTruthy(value) {
   return v === "1" || v === "true" || v === "yes" || v === "on";
 }
 
-function loadEnvFile(path) {
-  const map = {};
-  if (!existsSync(path)) return map;
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const m = trimmed.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (!m) continue;
-    let v = m[2];
-    if (
-      (v.startsWith('"') && v.endsWith('"')) ||
-      (v.startsWith("'") && v.endsWith("'"))
-    ) {
-      v = v.slice(1, -1);
-    }
-    map[m[1]] = v;
-  }
-  return map;
-}
-
 function mergeEnv(fileEnv, procEnv) {
   const out = { ...fileEnv };
   for (const [k, v] of Object.entries(procEnv)) {
@@ -128,75 +115,6 @@ function mergeEnv(fileEnv, procEnv) {
     }
   }
   return out;
-}
-
-function readMAdminSecret() {
-  const out = execSync(
-    `docker exec ${dbContainer} psql -U ${dbUser} -d ${dbName} -tAc "SET ROLE logto_tenant_logto_admin; SELECT secret FROM applications WHERE id = 'm-admin' LIMIT 1;"`,
-    { encoding: "utf8" },
-  );
-  const secret = out
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .find((l) => l && l !== "SET");
-  if (!secret) {
-    throw new Error(
-      "Missing admin-tenant application m-admin. Is Logto DB seeded (docker compose up)?",
-    );
-  }
-  return secret;
-}
-
-async function getAdminAccessToken(appSecret) {
-  const res = await fetch(`${adminEndpoint}/oidc/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: "m-admin",
-      client_secret: appSecret,
-      resource: "https://admin.logto.app/api",
-      scope: "all",
-    }),
-  });
-  if (!res.ok) {
-    throw new Error(`Admin M2M token failed: ${res.status} ${await res.text()}`);
-  }
-  const data = await res.json();
-  if (!data.access_token) throw new Error("Admin M2M token response missing access_token");
-  return data.access_token;
-}
-
-function asList(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (payload && Array.isArray(payload.data)) return payload.data;
-  if (payload && typeof payload === "object" && payload.id) return [payload];
-  return [];
-}
-
-async function api(token, method, path, body) {
-  const res = await fetch(`${adminEndpoint}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  let data = null;
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
-  }
-  if (!res.ok) {
-    const detail = typeof data === "string" ? data : JSON.stringify(data);
-    throw new Error(`${method} ${path} → ${res.status} ${detail}`);
-  }
-  return data;
 }
 
 async function findUser(token) {

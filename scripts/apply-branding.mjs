@@ -28,7 +28,10 @@ const PRIMARY = "#1677ff";
 const PRIMARY_DARK = "#4593ff";
 const logoUrl = `${brandBase}/luminaryworks-logo.svg`;
 
-/** Row + wrap social buttons; auto-adapts when more connectors (X / Feishu / QQ) are enabled. */
+/**
+ * customCss 唯一归属地（default 租户）。ensure-sign-in-experience.mjs 不再写入此字段。
+ * Row + wrap social buttons; auto-adapts when more connectors (X / Feishu / QQ) are enabled.
+ */
 const SOCIAL_ROW_CSS = `
 #app div[class*='socialLinkList'] {
   display: flex !important;

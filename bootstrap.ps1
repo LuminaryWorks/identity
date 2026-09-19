@@ -84,6 +84,9 @@ if (-not $adminReady) {
 Write-Host "> Ensuring Logto Admin Console operator (LW_LOGTO_ADMIN_*) ..."
 Invoke-Node "scripts/ensure-logto-admin.mjs"
 
+Write-Host "> Applying LuminaryWorks branding to Admin Console sign-in ..."
+Invoke-Node "scripts/ensure-admin-console-branding.mjs"
+
 Write-Host "> Ensuring M2M + registering applications ..."
 Invoke-Node "scripts/bootstrap-m2m.mjs"
 
@@ -100,6 +103,18 @@ if (Test-Path .\registered-apps.json) {
   Invoke-Node "scripts/ensure-social-connectors.mjs"
   Write-Host "> Ensuring sign-in accepts email or username ..."
   Invoke-Node "scripts/ensure-sign-in-experience.mjs"
+  $forceMfa = $env:LOGTO_FORCE_MFA
+  if (-not $forceMfa) {
+    $forceLine = Select-String -Path .env -Pattern '^LOGTO_FORCE_MFA=(.+)$' -ErrorAction SilentlyContinue
+    if ($forceLine) { $forceMfa = $forceLine.Matches.Groups[1].Value.Trim() }
+  }
+  if ($forceMfa -eq "1" -or $profile -eq "product") {
+    Write-Host "> Enabling tenant force-MFA (Mandatory) for product/production ..."
+    Invoke-Node "scripts/ensure-force-mfa.mjs" "--on"
+  } else {
+    Write-Host "> Keeping MFA off for local/dev (password Headless DX) ..."
+    Invoke-Node "scripts/ensure-force-mfa.mjs" "--off"
+  }
 }
 
 if (Select-String -Path .env -Pattern '^LOGTO_M2M_APP_ID=.+$') {
@@ -109,6 +124,6 @@ if (Select-String -Path .env -Pattern '^LOGTO_M2M_APP_ID=.+$') {
 
 Write-Host "OK Identity ready."
 Write-Host "  OIDC:  $endpoint/oidc"
-Write-Host "  Admin: $adminEndpoint  (operator: LW_LOGTO_ADMIN_* in .env)"
+Write-Host "  Admin: $adminEndpoint  (operator: LW_LOGTO_ADMIN_* in .env; sign-in branded)"
 Write-Host "  Logo:  https://cdn.luminaryworks.dev/logo/luminaryworks-logo.svg"
 Write-Host "  Platform accounts: ACCOUNTS.dev.env | ACCOUNTS.product.env | LW_* (not Console login)"

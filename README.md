@@ -207,6 +207,28 @@ DoerFlow 特例：Logto 平台会话与 wallet/SIWE 会话独立；Logto 不证�
 
 Logto 托管页 `http://localhost:3001/sign-in` 的社交按钮布局由 `customCss` 控制（`apply-branding.mjs` / `ensure-sign-in-experience.mjs`），与产品 Headless 面板是两套 UI。
 
+### Force-MFA（生态策略）
+
+| 环境 | MFA | 说明 |
+|------|-----|------|
+| **本地 / `IDENTITY_ACCOUNTS_PROFILE=dev`** | **关** | `bootstrap` → `ensure-force-mfa --off`；密码 Headless 可直接登录 |
+| **测试覆盖** | 临时开 | 产品 e2e（如 DoerFlow `pnpm e2e:admin:mfa`）临时 `--on` + bind TOTP，结束后 `--restore` / `--off` |
+| **生产 / `product` 或 `LOGTO_FORCE_MFA=1`** | **全生态 Mandatory** | 注册/登录必须绑 TOTP（+ BackupCode），降低恶意注册与资源滥用 |
+
+```bash
+# 本地保持关闭（id:up / bootstrap 默认）
+node scripts/ensure-force-mfa.mjs --off
+
+# 生产 / product 开启
+node scripts/ensure-force-mfa.mjs --on
+
+# 仅测试：临时开启并绑可复现 TOTP，测完恢复
+node scripts/ensure-force-mfa.mjs --on --bind-email=admin.doerflow@luminaryworks.dev
+node scripts/ensure-force-mfa.mjs --restore   # 或 --off
+```
+
+DoerFlow：`pnpm e2e:admin:mfa`（结束后默认恢复本地无 MFA）。勿在日常本地开发长期保留 Mandatory。
+
 ### Social login（Google / GitHub）本地联调
 
 1. **在提供商创建 OAuth 应用**（回调必须指向 Logto，不是产品 SPA）：

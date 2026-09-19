@@ -104,34 +104,29 @@ const socialTargets = [
   ),
 ];
 
+const connectorsHaveEmail = (Array.isArray(connectors) ? connectors : []).some(
+  (c) =>
+    c?.type === "Email" ||
+    String(c?.target || "").toLowerCase() === "email" ||
+    String(c?.connectorId || "").toLowerCase().includes("email") ||
+    String(c?.id || "").toLowerCase().includes("email"),
+);
+
 const patch = {
   signIn: {
     ...(current.signIn || {}),
     methods: desiredMethods,
   },
-  // Username + password self-register (Headless NewPasswordIdentity).
-  // Email/phone sign-up requires verification codes — not enabled here.
+  // Username always; email when an Email connector exists (verification required).
   signUp: {
-    identifiers: ["username"],
+    identifiers: connectorsHaveEmail
+      ? ["email", "username"]
+      : ["username"],
     password: true,
-    verify: false,
+    verify: Boolean(connectorsHaveEmail),
   },
   ...(socialTargets.length ? { socialSignInConnectorTargets: socialTargets } : {}),
-  customCss: `
-#app div[class*='socialLinkList'] {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: stretch;
-}
-#app div[class*='socialLinkList'] > button,
-#app div[class*='socialLinkList'] > div[class*='socialLinkButton'] {
-  margin-bottom: 0 !important;
-  flex: 1 1 calc(50% - 6px);
-  min-width: min(140px, 100%);
-}
-`.trim(),
+  // customCss 由 apply-branding.mjs 唯一维护，此处不写入以免互相覆盖。
 };
 
 const patchRes = await fetch(`${endpoint}/api/sign-in-exp`, {
@@ -157,6 +152,8 @@ console.log(
   "✓ Sign-up:",
   (updated.signUp?.identifiers || []).join(", ") || "(none)",
   updated.signUp?.password ? "+ password" : "",
+  updated.signUp?.verify ? "+ verify" : "",
+  connectorsHaveEmail ? "(email connector detected)" : "(username-only until Email connector is configured)",
 );
 if (socialTargets.length) {
   console.log(
@@ -166,7 +163,6 @@ if (socialTargets.length) {
   for (const c of connectors.filter((x) => socialTargets.includes(x.target))) {
     console.log(`  ${c.target} callback: ${endpoint}/callback/${c.id}`);
   }
-  console.log("✓ customCss: social buttons row + wrap (auto-adapts for new connectors)");
 } else {
   console.log("· No social connectors found — configure Google/GitHub in Admin, then re-run.");
 }

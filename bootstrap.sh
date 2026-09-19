@@ -60,6 +60,9 @@ fi
 echo "▶ Ensuring Logto Admin Console operator (LW_LOGTO_ADMIN_*) ..."
 node scripts/ensure-logto-admin.mjs
 
+echo "▶ Applying LuminaryWorks branding to Admin Console sign-in ..."
+node scripts/ensure-admin-console-branding.mjs
+
 echo "▶ Ensuring M2M + registering applications ..."
 node scripts/bootstrap-m2m.mjs
 
@@ -74,6 +77,15 @@ if [ -f registered-apps.json ]; then
   node scripts/ensure-social-connectors.mjs
   echo "▶ Ensuring sign-in accepts email or username ..."
   node scripts/ensure-sign-in-experience.mjs
+  # MFA policy: local/dev OFF; product / LOGTO_FORCE_MFA=1 ON (ecosystem-wide Mandatory)
+  FORCE_MFA_FLAG="$(grep -E '^LOGTO_FORCE_MFA=' .env 2>/dev/null | cut -d= -f2- || true)"
+  if [ "${LOGTO_FORCE_MFA:-${FORCE_MFA_FLAG}}" = "1" ] || [ "${PROFILE}" = "product" ]; then
+    echo "▶ Enabling tenant force-MFA (Mandatory) for product/production ..."
+    node scripts/ensure-force-mfa.mjs --on
+  else
+    echo "▶ Keeping MFA off for local/dev (password Headless DX) ..."
+    node scripts/ensure-force-mfa.mjs --off
+  fi
 fi
 
 if grep -qE '^LOGTO_M2M_APP_ID=.+' .env; then
@@ -83,6 +95,6 @@ fi
 
 echo "✓ Identity ready."
 echo "  OIDC:  ${ENDPOINT}/oidc"
-echo "  Admin: ${ADMIN_ENDPOINT}  (operator: LW_LOGTO_ADMIN_* in .env)"
+echo "  Admin: ${ADMIN_ENDPOINT}  (operator: LW_LOGTO_ADMIN_* in .env; sign-in 已品牌化)"
 echo "  Logo:  $(grep -E '^IDENTITY_BRAND_ENDPOINT=' .env | cut -d= -f2- || echo https://cdn.luminaryworks.dev/logo)/luminaryworks-logo.svg"
 echo "  Platform accounts: ACCOUNTS.dev.env | ACCOUNTS.product.env | LW_* (not Console login)"

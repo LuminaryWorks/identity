@@ -4,6 +4,7 @@ dev.env
 registered-apps.json
 ACCOUNTS.dev.env
 ACCOUNTS.product.env
+.force-mfa-state.json
 ACCOUNTS.*.seeded.json
 DEV_ACCOUNTS.env
 node_modules/

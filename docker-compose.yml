@@ -9,6 +9,7 @@
 #   OIDC:  http://localhost:3001/oidc
 #   Admin: http://localhost:3002
 #   Logo:  https://cdn.luminaryworks.dev/logo/luminaryworks-logo.svg
+#   镜像：identity/branding 本地 build 的品牌 overlay（非直接拉 svhd/logto）
 #
 # 产品后端通过 IDP_ISSUER + JWKS 验签；前端走 OIDC PKCE / Experience Headless。
 # 资源级 AuthZ 在各产品 Casbin，不在本 compose。
@@ -52,7 +53,11 @@ services:
       start_period: 5s
 
   identity:
-    image: svhd/logto:latest
+    image: ${IDENTITY_IMAGE:-luminaryworks/identity:1.42.0-lw1}
+    build:
+      context: ./branding
+      args:
+        LOGTO_VERSION: ${LOGTO_VERSION:-1.42.0}
     container_name: luminary-identity
     restart: unless-stopped
     depends_on:

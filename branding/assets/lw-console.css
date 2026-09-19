@@ -1,0 +1,44 @@
+/* Console 品牌 overlay。升级 Logto 后目视：顶栏 logo / 文案 / get-started 只剩 Manage 卡。
+   选择器靠 CSS Modules 后缀（__[hash]__[local]），hash 变了也不影响。 */
+
+/* 顶栏 logo：保留 svg 骨架，隐藏内部图形，用 background 顶上去。
+   logo 是 256x256 正方形标记，所以按 28x28 排版。 */
+div[class*="__topbar"] > svg[class*="__logo"] > * { display: none; }
+div[class*="__topbar"] > svg[class*="__logo"] {
+  width: 28px;
+  height: 28px;
+  background: url("/console/assets/lw-logo.svg") no-repeat center / contain;
+}
+
+/* 顶栏文案 Admin Console → LuminaryWorks Identity。
+   用 CSS 而不是 JS 改 textContent，避免和 React 重渲染打架。 */
+div[class*="__topbar"] > div[class*="__text"] { font-size: 0; }
+div[class*="__topbar"] > div[class*="__text"]::after {
+  content: "LuminaryWorks Identity";
+  font: var(--font-title-2);
+}
+
+/* 隐藏 Docs / Help / 版本号。版本号按钮会请求 numbers.logto.io，内网必失败。
+   UserInfo 的根 class 是 __container，不会被这条命中。 */
+div[class*="__topbar"] > a[class*="__button"],
+div[class*="__topbar"] > div[class*="__button"] { display: none; }
+
+/* AppLoading：进 Console 前的全屏 loading。字标是 viewBox 154×48 的 Logto SVG，没有 __logo class。
+   顶栏那份同 viewBox，但父级是 __topbar，不会被这条命中。 */
+div[class*="__container"] > svg[viewBox="0 0 154 48"] > * { display: none; }
+div[class*="__container"] > svg[viewBox="0 0 154 48"] {
+  width: 48px;
+  height: 48px;
+  background: url("/console/assets/lw-logo.svg") no-repeat center / contain;
+}
+
+/* 侧边栏底部的 Logto Cloud 推广卡（Sidebar/OssCloudCard，菜单区唯一的 __wrapper 直接子节点）。 */
+div[class*="__menuContent"] > div[class*="__wrapper"] { display: none; }
+
+/* get-started 只保留 Manage 卡（唯一含 /roles 链接的那张）。
+   外层 data-lw-path 是路由门闩：没有它的话，别的同样是 container > card
+   结构但不含 /roles 链接的页面会被整页隐藏。 */
+html[data-lw-path$="/get-started"]
+  div[class*="__container"] > div[class*="__card"]:not(:has(a[href$="/roles"])) {
+  display: none;
+}
