@@ -119,6 +119,8 @@
         "http://127.0.0.1:17890/auth/callback",
         "http://127.0.0.1:17891/auth/callback",
         "http://localhost:17891/auth/callback",
+        "http://127.0.0.1:17892/auth/callback",
+        "http://localhost:17892/auth/callback",
         "https://app.remote.vistacast.dev/auth/callback"
       ],
       "postLogoutRedirectUris": [
@@ -128,6 +130,8 @@
         "http://127.0.0.1:17890/login",
         "http://127.0.0.1:17891/login",
         "http://localhost:17891/login",
+        "http://127.0.0.1:17892/login",
+        "http://localhost:17892/login",
         "https://app.remote.vistacast.dev/login"
       ]
     },
