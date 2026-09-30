@@ -3,8 +3,9 @@
  *
  * Policy:
  *   - Local / IDENTITY_ACCOUNTS_PROFILE=dev → MFA OFF (UserControlled, no factors)
- *   - Production / product profile / LOGTO_FORCE_MFA=1 → Mandatory + Totp (+ BackupCode)
- *   - Tests temporarily enable MFA, then --restore / --off so local DX stays password-only
+ *   - `node scripts/ensure-force-mfa.mjs --on` → Mandatory + Totp (+ BackupCode)
+ *     for ephemeral tests only. Bootstrap no longer calls --on for product.
+ *   - Product auth mail uses ensure-auth-mail.mjs (adaptive / optional Email MFA).
  *
  * Usage (from identity/):
  *   node scripts/ensure-force-mfa.mjs --off

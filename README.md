@@ -39,7 +39,8 @@ LuminaryWorks 六产品 + 控制台的**统一登录授权服务**。产品只�
 5. `scripts/sync-client-ids.mjs` → 写入各产品 `.env` / `.env.development` / `.env.local`（含 `NEXT_PUBLIC_*` 与 `PUBLIC_*`）
 6. `scripts/ensure-social-connectors.mjs` — 若配置了 `LOGTO_GOOGLE_CLIENT_*` / `LOGTO_GITHUB_CLIENT_*` 则创建社交连接器
 7. `scripts/seed-accounts.mjs` — 校验 `ACCOUNTS.{dev|product}.env` 或 `LW_*` 环境变量；**未配置则中止**（不自动复制、不交互）
-8. `scripts/ensure-sign-in-experience.mjs` — 邮箱/用户名密码 + 把已有社交 connector 挂到 SIE
+8. `scripts/ensure-auth-mail.mjs` — 按 `EMAIL_AUTH_ENABLED` 安装或卸下 HTTP Email connector，并设置分级 MFA（不是全员 Mandatory TOTP）
+9. `scripts/ensure-sign-in-experience.mjs` — 邮箱/用户名密码；有 Email connector 时注册 `verify`
 
 ### 部署顺序
 
@@ -207,24 +208,29 @@ DoerFlow 特例：Logto 平台会话与 wallet/SIWE 会话独立；Logto 不证�
 
 Logto 托管页 `http://localhost:3001/sign-in` 的社交按钮布局由 `customCss` 控制（`apply-branding.mjs` / `ensure-sign-in-experience.mjs`），与产品 Headless 面板是两套 UI。
 
-### Force-MFA（生态策略）
+### 认证邮件与 MFA
 
-| 环境 | MFA | 说明 |
-|------|-----|------|
-| **本地 / `IDENTITY_ACCOUNTS_PROFILE=dev`** | **关** | `bootstrap` → `ensure-force-mfa --off`；密码 Headless 可直接登录 |
-| **测试覆盖** | 临时开 | 产品 e2e（如 DoerFlow `pnpm e2e:admin:mfa`）临时 `--on` + bind TOTP，结束后 `--restore` / `--off` |
-| **生产 / `product` 或 `LOGTO_FORCE_MFA=1`** | **全生态 Mandatory** | 注册/登录必须绑 TOTP（+ BackupCode），降低恶意注册与资源滥用 |
+| 环境 | 行为 |
+|------|------|
+| **本地 / `dev`，或 `EMAIL_AUTH_ENABLED=0`** | 不发认证邮件、不强制 MFA。`bootstrap` → `ensure-auth-mail.mjs --off` |
+| **SaaS / `product`，或 `EMAIL_AUTH_ENABLED=1`** | 注册 Email OTP。日常登录邮箱+密码。Adaptive MFA + Email/TOTP/Passkey 可选。组织可单独 `isMfaRequired` |
+| **测试覆盖** | `ensure-force-mfa.mjs --on` 仍可临时 Mandatory TOTP，结束后 `--restore` / `--off`。bootstrap 不再对 product 打开全员 Mandatory |
 
 ```bash
-# 本地保持关闭（id:up / bootstrap 默认）
-node scripts/ensure-force-mfa.mjs --off
+# 本地 / 内网：关闭认证邮件
+node scripts/ensure-auth-mail.mjs --off
+node scripts/ensure-sign-in-experience.mjs
 
-# 生产 / product 开启
-node scripts/ensure-force-mfa.mjs --on
+# SaaS：注册验证 + 自适应 MFA（需要 Notification Service 的 endpoint 与 service key）
+node scripts/ensure-auth-mail.mjs --on
+node scripts/ensure-sign-in-experience.mjs
 
-# 仅测试：临时开启并绑可复现 TOTP，测完恢复
+# 某个企业组织强制 MFA
+node scripts/ensure-org-mfa.mjs --org=<organizationId>
+
+# 仅测试：临时 Mandatory TOTP，测完恢复
 node scripts/ensure-force-mfa.mjs --on --bind-email=admin.doerflow@luminaryworks.dev
-node scripts/ensure-force-mfa.mjs --restore   # 或 --off
+node scripts/ensure-force-mfa.mjs --restore
 ```
 
 DoerFlow：`pnpm e2e:admin:mfa`（结束后默认恢复本地无 MFA）。勿在日常本地开发长期保留 Mandatory。

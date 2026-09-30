@@ -75,17 +75,27 @@ if [ -f registered-apps.json ]; then
   IDENTITY_ACCOUNTS_PROFILE="${PROFILE}" node scripts/seed-accounts.mjs
   echo "▶ Ensuring social connectors from LOGTO_GOOGLE_* / LOGTO_GITHUB_* (optional) ..."
   node scripts/ensure-social-connectors.mjs
-  echo "▶ Ensuring sign-in accepts email or username ..."
-  node scripts/ensure-sign-in-experience.mjs
-  # MFA policy: local/dev OFF; product / LOGTO_FORCE_MFA=1 ON (ecosystem-wide Mandatory)
-  FORCE_MFA_FLAG="$(grep -E '^LOGTO_FORCE_MFA=' .env 2>/dev/null | cut -d= -f2- || true)"
-  if [ "${LOGTO_FORCE_MFA:-${FORCE_MFA_FLAG}}" = "1" ] || [ "${PROFILE}" = "product" ]; then
-    echo "▶ Enabling tenant force-MFA (Mandatory) for product/production ..."
-    node scripts/ensure-force-mfa.mjs --on
-  else
-    echo "▶ Keeping MFA off for local/dev (password Headless DX) ..."
-    node scripts/ensure-force-mfa.mjs --off
+  # Auth mail: dev off unless EMAIL_AUTH_ENABLED=1; product on unless =0.
+  # Does not enable tenant Mandatory TOTP (that remains ensure-force-mfa --on for tests).
+  EMAIL_AUTH_RAW="${EMAIL_AUTH_ENABLED:-}"
+  if [ -z "${EMAIL_AUTH_RAW}" ]; then
+    EMAIL_AUTH_RAW="$(grep -E '^EMAIL_AUTH_ENABLED=' .env 2>/dev/null | cut -d= -f2- || true)"
   fi
+  if [ -z "${EMAIL_AUTH_RAW}" ]; then
+    if [ "${PROFILE}" = "product" ]; then EMAIL_AUTH_RAW=1; else EMAIL_AUTH_RAW=0; fi
+  fi
+  case "${EMAIL_AUTH_RAW}" in
+    1|true|TRUE|on|ON)
+      echo "▶ Enabling auth mail (register OTP + adaptive MFA, not tenant Mandatory TOTP) ..."
+      node scripts/ensure-auth-mail.mjs --on
+      ;;
+    *)
+      echo "▶ Auth mail off (private/dev). Registration will not require an email code ..."
+      node scripts/ensure-auth-mail.mjs --off
+      ;;
+  esac
+  echo "▶ Ensuring sign-in methods match the email connector ..."
+  node scripts/ensure-sign-in-experience.mjs
 fi
 
 if grep -qE '^LOGTO_M2M_APP_ID=.+' .env; then

@@ -101,20 +101,23 @@ if (Test-Path .\registered-apps.json) {
   Invoke-Node "scripts/seed-accounts.mjs"
   Write-Host "> Ensuring social connectors from LOGTO_GOOGLE_* / LOGTO_GITHUB_* (optional) ..."
   Invoke-Node "scripts/ensure-social-connectors.mjs"
-  Write-Host "> Ensuring sign-in accepts email or username ..."
-  Invoke-Node "scripts/ensure-sign-in-experience.mjs"
-  $forceMfa = $env:LOGTO_FORCE_MFA
-  if (-not $forceMfa) {
-    $forceLine = Select-String -Path .env -Pattern '^LOGTO_FORCE_MFA=(.+)$' -ErrorAction SilentlyContinue
-    if ($forceLine) { $forceMfa = $forceLine.Matches.Groups[1].Value.Trim() }
+  $emailAuth = $env:EMAIL_AUTH_ENABLED
+  if (-not $emailAuth) {
+    $emailLine = Select-String -Path .env -Pattern '^EMAIL_AUTH_ENABLED=(.+)$' -ErrorAction SilentlyContinue
+    if ($emailLine) { $emailAuth = $emailLine.Matches.Groups[1].Value.Trim().Trim('"') }
   }
-  if ($forceMfa -eq "1" -or $profile -eq "product") {
-    Write-Host "> Enabling tenant force-MFA (Mandatory) for product/production ..."
-    Invoke-Node "scripts/ensure-force-mfa.mjs" "--on"
+  if (-not $emailAuth) {
+    if ($profile -eq "product") { $emailAuth = "1" } else { $emailAuth = "0" }
+  }
+  if ($emailAuth -eq "1" -or $emailAuth -eq "true" -or $emailAuth -eq "on") {
+    Write-Host "> Enabling auth mail (register OTP + adaptive MFA, not tenant Mandatory TOTP) ..."
+    Invoke-Node "scripts/ensure-auth-mail.mjs" "--on"
   } else {
-    Write-Host "> Keeping MFA off for local/dev (password Headless DX) ..."
-    Invoke-Node "scripts/ensure-force-mfa.mjs" "--off"
+    Write-Host "> Auth mail off (private/dev). Registration will not require an email code ..."
+    Invoke-Node "scripts/ensure-auth-mail.mjs" "--off"
   }
+  Write-Host "> Ensuring sign-in methods match the email connector ..."
+  Invoke-Node "scripts/ensure-sign-in-experience.mjs"
 }
 
 if (Select-String -Path .env -Pattern '^LOGTO_M2M_APP_ID=.+$') {
