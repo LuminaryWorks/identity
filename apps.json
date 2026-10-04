@@ -33,12 +33,18 @@
       "redirectUris": [
         "http://localhost:18082/auth/callback",
         "https://localhost:18082/auth/callback",
-        "https://blockyedu.com/auth/callback"
+        "http://localhost:18083/auth/callback",
+        "https://localhost:18083/auth/callback",
+        "https://blockyedu.com/auth/callback",
+        "https://k12.blockyedu.com/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://localhost:18082/login",
         "https://localhost:18082/login",
-        "https://blockyedu.com/login"
+        "http://localhost:18083/login",
+        "https://localhost:18083/login",
+        "https://blockyedu.com/login",
+        "https://k12.blockyedu.com/login"
       ]
     },
     {
