@@ -146,11 +146,13 @@
       "type": "SPA",
       "redirectUris": [
         "http://localhost:15180/auth/callback",
-        "https://app.syncrobrain.com/auth/callback"
+        "https://app.syncrobrain.com/auth/callback",
+        "https://admin.syncrobrain.com/auth/callback"
       ],
       "postLogoutRedirectUris": [
         "http://localhost:15180/login",
-        "https://app.syncrobrain.com/login"
+        "https://app.syncrobrain.com/login",
+        "https://admin.syncrobrain.com/login"
       ]
     },
     {
