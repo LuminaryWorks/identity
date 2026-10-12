@@ -88,8 +88,17 @@ if (created === 0 && skipped === 0) {
   process.exit(0);
 }
 
-if (created > 0) {
-  console.log("▶ Refreshing sign-in experience social targets …");
+// Attach connectors to Sign-in Experience (required for Headless social buttons).
+console.log("▶ Refreshing sign-in experience social targets …");
+const { spawnSync } = await import("node:child_process");
+const sie = spawnSync(process.execPath, ["scripts/ensure-sign-in-experience.mjs"], {
+  cwd: root,
+  stdio: "inherit",
+  env: process.env,
+});
+if ((sie.status ?? 1) !== 0) {
+  console.error("✗ ensure-sign-in-experience failed after social connector sync");
+  process.exit(sie.status ?? 1);
 }
 
 async function getToken() {

@@ -3,11 +3,23 @@
   "roles": [
     {
       "name": "super_admin",
-      "description": "生态超管：全产品最高权（经各产品 external_role_mapping）"
+      "description": "生态超管：全产品最高权（经各产品 external_role_mapping）",
+      "apiScopes": [
+        {
+          "resourceIndicator": "https://entitlement.luminaryworks.dev",
+          "scopes": ["entitlement:admin", "entitlement:read"]
+        }
+      ]
     },
     {
       "name": "platform_admin",
-      "description": "平台运维：用户/RBAC/组织（产品侧常映射为本地 admin）"
+      "description": "平台运维：用户/RBAC/组织（产品侧常映射为本地 admin）",
+      "apiScopes": [
+        {
+          "resourceIndicator": "https://entitlement.luminaryworks.dev",
+          "scopes": ["entitlement:admin", "entitlement:read"]
+        }
+      ]
     },
     {
       "name": "guest",

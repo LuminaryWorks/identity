@@ -71,6 +71,7 @@ const management = createIdentityManagementProvider({
 });
 await ensureJwtRolesClaim();
 const roleIdByName = await ensureRoles(manifest.roles);
+await ensureRoleApiScopes(manifest.roles, roleIdByName);
 const accountsOut = [];
 
 for (const acct of accounts) {
@@ -253,6 +254,80 @@ async function ensureRoles(roles) {
   return map;
 }
 
+/**
+ * Attach API resource scopes to User roles so OIDC access tokens for that
+ * resource include scope (e.g. entitlement:admin for Control Console).
+ */
+async function ensureRoleApiScopes(roles, roleIdByName) {
+  const resources = asList(await api("GET", "/api/resources?page=1&page_size=100"));
+  const unresolved = [];
+  for (const role of roles) {
+    const bindings = Array.isArray(role.apiScopes) ? role.apiScopes : [];
+    if (!bindings.length) continue;
+    const roleId = roleIdByName.get(role.name);
+    if (!roleId) continue;
+    const attached = asList(await api("GET", `/api/roles/${roleId}/scopes`));
+    const attachedIds = new Set(attached.map((scope) => scope.id));
+    const missing = [];
+    for (const binding of bindings) {
+      const resource = resources.find((item) => item.indicator === binding.resourceIndicator);
+      if (!resource) {
+        unresolved.push(`${role.name}: missing API resource ${binding.resourceIndicator}`);
+        console.warn(
+          `! role ${role.name}: API resource missing ${binding.resourceIndicator} (run pnpm id:register)`,
+        );
+        continue;
+      }
+      const scopes = asList(
+        await api("GET", `/api/resources/${resource.id}/scopes?page=1&page_size=100`),
+      );
+      for (const scopeName of binding.scopes || []) {
+        const scope = scopes.find((item) => item.name === scopeName);
+        if (!scope) {
+          unresolved.push(
+            `${role.name}: missing scope ${scopeName} on ${binding.resourceIndicator}`,
+          );
+          console.warn(
+            `! role ${role.name}: scope ${scopeName} missing on ${binding.resourceIndicator}`,
+          );
+          continue;
+        }
+        if (!attachedIds.has(scope.id)) missing.push(scope.id);
+      }
+    }
+    if (!missing.length) {
+      console.log(`= role API scopes ok: ${role.name}`);
+      continue;
+    }
+    await api("POST", `/api/roles/${roleId}/scopes`, { scopeIds: missing });
+    console.log(`+ role API scopes: ${role.name} (+${missing.length})`);
+  }
+  // Hard-fail when Control Console admin scopes cannot be bound — otherwise
+  // superadmin logins get a valid JWT with empty scope and Entitlement returns 403.
+  const required = roles.filter((role) =>
+    (role.apiScopes || []).some((b) =>
+      (b.scopes || []).includes("entitlement:admin"),
+    ),
+  );
+  for (const role of required) {
+    const roleId = roleIdByName.get(role.name);
+    if (!roleId) {
+      unresolved.push(`${role.name}: role id missing`);
+      continue;
+    }
+    const attached = asList(await api("GET", `/api/roles/${roleId}/scopes`));
+    const names = new Set(attached.map((scope) => scope.name));
+    if (!names.has("entitlement:admin")) {
+      unresolved.push(`${role.name}: entitlement:admin not attached after seed`);
+    }
+  }
+  if (unresolved.length) {
+    console.error("✗ Role API scope binding incomplete:");
+    for (const line of unresolved) console.error(`  - ${line}`);
+    process.exit(1);
+  }
+}
+
 async function ensureUser({ email, username, name, password: pwd }) {
   const users = asList(
     await api("GET", `/api/users?search=${encodeURIComponent(email)}&page=1&page_size=20`),
@@ -270,6 +345,10 @@ async function ensureUser({ email, username, name, password: pwd }) {
       });
       console.log(`~ updated ${username}: ${email}`);
     }
+    // Keep seeded passwords aligned with ACCOUNTS.*.env / operator secrets on every run.
+    // Without this, re-bootstrap leaves stale passwords and accept/Playwright fail.
+    await api("PATCH", `/api/users/${user.id}/password`, { password: pwd });
+    console.log(`~ password reset ${username}: ${email}`);
     return user;
   }
   return management.createUser({

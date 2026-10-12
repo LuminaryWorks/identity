@@ -2,8 +2,8 @@
  * Apply LuminaryWorks branding to Logto Admin Console sign-in (admin tenant).
  *
  * Sets:
- *   - logo / favicon → ${adminEndpoint}/assets/lw-logo.svg
- *     （镜像 overlay 放进 experience 静态目录，和 Console 同源，不依赖官网是否在跑）
+ *   - logo / favicon → ${adminEndpoint}/console/assets/lw-logo.svg
+ *     （品牌 overlay 拷进 Console 静态目录；/assets/lw-logo 在 Admin 口常 404，勿用）
  *   - primaryColor → #1677ff (same tokens as apply-branding.mjs)
  *
  * Admin tenant Management API uses built-in M2M app `m-admin`
@@ -42,8 +42,8 @@ const dbName = env("IDENTITY_DB_NAME", "logto");
 const PRIMARY = "#1677ff";
 const PRIMARY_DARK = "#4593ff";
 
-// 不用 IDENTITY_BRAND_ENDPOINT：那是官网/CDN，本地经常没起来，登录页会裂图。
-const logoUrl = `${adminEndpoint}/assets/lw-logo.svg`;
+// 同源 Console 静态资源：本地/线上品牌镜像都有，不依赖 CDN。
+const logoUrl = `${adminEndpoint}/console/assets/lw-logo.svg`;
 
 /**
  * Admin Console sign-in only: shrink the 256² mark and hide “Powered by Logto”.
