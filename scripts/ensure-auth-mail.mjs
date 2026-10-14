@@ -93,9 +93,14 @@ async function patchSignIn(body) {
     const message = err instanceof Error ? err.message : String(err);
     if (body.adaptiveMfa && /adaptiveMfa/i.test(message)) {
       console.warn(
-        "· This Logto rejected adaptiveMfa. Falling back to optional Email MFA. No custom risk engine.",
+        "· This Logto rejected adaptiveMfa. Falling back without adaptiveMfa field.",
       );
       const { adaptiveMfa, ...rest } = body;
+      return patchSignIn(rest);
+    }
+    if (body.mfa && /mfa|invalid_enum|EmailVerificationCode|NoPrompt/i.test(message)) {
+      console.warn("· MFA patch rejected by this Logto build; retrying without mfa block.");
+      const { mfa, adaptiveMfa, ...rest } = body;
       return patchSignIn(rest);
     }
     if (body.forgotPasswordMethods && /forgotPassword/i.test(message)) {

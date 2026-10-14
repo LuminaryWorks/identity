@@ -27,9 +27,11 @@ export function decideAuthMailPolicy(enabled) {
   }
   return {
     connector: "upsert",
+    // Logto OSS 1.22 MFA factors: Totp | WebAuthn | BackupCode (email OTP is
+    // forgotPassword / experience verify, not an MFA factor enum value).
     mfa: {
-      factors: ["EmailVerificationCode", "Totp", "WebAuthn", "BackupCode"],
-      policy: "NoPrompt",
+      factors: ["Totp", "WebAuthn", "BackupCode"],
+      policy: "UserControlled",
       organizationRequiredMfaPolicy: "Mandatory",
     },
     adaptiveMfa: { enabled: true },
