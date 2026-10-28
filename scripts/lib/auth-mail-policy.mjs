@@ -16,10 +16,10 @@ export function decideAuthMailPolicy(enabled) {
   if (!enabled) {
     return {
       connector: "remove",
+      // Logto OSS 1.22 enum is UserControlled | Mandatory (no NoPrompt).
       mfa: {
         factors: [],
-        policy: "NoPrompt",
-        organizationRequiredMfaPolicy: "NoPrompt",
+        policy: "UserControlled",
       },
       adaptiveMfa: { enabled: false },
       forgotPasswordMethods: [],
@@ -27,12 +27,13 @@ export function decideAuthMailPolicy(enabled) {
   }
   return {
     connector: "upsert",
+    // Factors empty by default so register/login is not blocked on optional MFA
+    // bind. Headless SPA skips via /profile/mfa/mfa-skipped when factors return.
     // Logto OSS 1.22 MFA factors: Totp | WebAuthn | BackupCode (email OTP is
     // forgotPassword / experience verify, not an MFA factor enum value).
     mfa: {
-      factors: ["Totp", "WebAuthn", "BackupCode"],
+      factors: [],
       policy: "UserControlled",
-      organizationRequiredMfaPolicy: "Mandatory",
     },
     adaptiveMfa: { enabled: true },
     forgotPasswordMethods: ["EmailVerificationCode"],
